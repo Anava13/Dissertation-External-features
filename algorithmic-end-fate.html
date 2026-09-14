@@ -1,0 +1,1504 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Algorithmic Chromosome End Fate</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400;1,6..72,500&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper:#F6F7F4; --card:#FFFFFF; --ink:#17201D; --slate:#6E7671;
+    --rule:#D8DCD4; --moss:#3E6B57; --red:#A62B1C; --red-soft:#F7E8E5;
+    --amber:#8A6412; --amber-soft:#F6EEDC; --teal-soft:#E4EEEF; --teal:#2F6068;
+    --violet:#5B4A7A; --violet-soft:#ECE8F2;
+  }
+  * { box-sizing:border-box; }
+  html, body { margin:0; padding:0; background:var(--paper); color:var(--ink);
+    font-family:Inter, system-ui, sans-serif; font-size:16px; line-height:1.6; }
+  .wrap { max-width:1580px; margin:0 auto; padding:24px 28px 64px; }
+  header.bar { display:flex; align-items:baseline; gap:20px; border-bottom:1px solid var(--rule);
+    padding-bottom:14px; margin-bottom:24px; flex-wrap:wrap; }
+  header.bar h1 { font-family:Newsreader, Georgia, serif; font-weight:500; font-size:20px; margin:0; }
+  header.bar .sig { font-family:Newsreader, Georgia, serif; font-style:italic; font-size:17px; color:var(--red); }
+  .count { color:var(--slate); font-size:14px; margin-left:auto; font-variant-numeric:tabular-nums; }
+
+  .layout { display:grid; grid-template-columns:264px minmax(300px,1fr) minmax(320px,410px); gap:32px; align-items:start; }
+
+  /* ---- control column ---- */
+  .controls { position:sticky; top:16px; max-height:calc(100vh - 40px); overflow-y:auto;
+    padding-right:8px; }
+  .cgroup { margin-bottom:18px; }
+  .cgroup h3 { font-family:Inter, sans-serif; font-size:12px; font-weight:500; color:var(--slate);
+    margin:0 0 8px; padding-bottom:4px; border-bottom:1px solid var(--rule); }
+  .gene { display:flex; align-items:center; gap:8px; margin-bottom:5px; }
+  .gene label { font-family:Newsreader, Georgia, serif; font-style:italic; font-size:15px;
+    width:74px; flex:none; color:var(--ink); }
+  .gene select { flex:1; min-width:0; font:inherit; font-size:13px; padding:3px 6px; background:var(--card);
+    color:var(--ink); border:1px solid var(--rule); border-radius:5px; font-family:Newsreader, Georgia, serif;
+    font-style:italic; }
+  .gene.set select { border-color:var(--red); color:var(--red); }
+  .gene select:focus-visible { outline:2px solid var(--moss); outline-offset:1px; }
+
+  .tempbox { background:var(--card); border:1px solid var(--rule); border-radius:8px; padding:12px 14px; margin-bottom:18px; }
+  .tempbox .row { display:flex; align-items:baseline; justify-content:space-between; }
+  .tempbox .val { font-family:Newsreader, Georgia, serif; font-size:22px; font-weight:500; }
+  .tempbox input[type=range] { width:100%; margin:8px 0 2px; accent-color:var(--moss); }
+  .tempbox .regimes { font-size:12px; color:var(--slate); line-height:1.45; }
+  .tempbox .regimes b { color:var(--amber); font-weight:500; }
+  .tempbox.inert .val { color:var(--slate); }
+
+  .presetbox { margin-bottom:18px; }
+  .presetbox select { width:100%; font:inherit; font-size:13px; padding:5px 7px; background:var(--card);
+    border:1px solid var(--rule); border-radius:6px; color:var(--ink); }
+  button.reset { font:inherit; font-size:13px; padding:5px 12px; background:var(--card); color:var(--slate);
+    border:1px solid var(--rule); border-radius:6px; cursor:pointer; width:100%; margin-top:8px; }
+  button.reset:hover { border-color:var(--moss); color:var(--moss); }
+
+  /* ---- figure ---- */
+  .figure { display:flex; justify-content:center; }
+  .figure svg { width:100%; max-width:680px; height:auto; }
+
+  /* ---- panel ---- */
+  ol.trace { list-style:none; margin:0 0 20px; padding:0; }
+  ol.trace li { border-left:2px solid var(--moss); padding:0 0 14px 16px; }
+  ol.trace li:last-child { padding-bottom:0; }
+  ol.trace li.predicted { border-left-color:#C3CABF; border-left-style:dotted; }
+  ol.trace li.predicted .a { color:var(--slate); }
+  ol.trace li.mark { border-left:none; padding:0 0 14px 18px; font-size:12px;
+    letter-spacing:.06em; color:var(--amber); }
+  .q { font-size:14px; color:var(--slate); }
+  .a { font-size:15px; }
+  .a em { font-style:italic; color:var(--red); font-family:Newsreader, Georgia, serif; font-size:16px; }
+  .drv { font-size:12.5px; color:var(--slate); margin-top:3px; padding-left:10px; border-left:1px solid var(--rule); }
+  .drv i { font-family:Newsreader, Georgia, serif; color:var(--red); font-size:13.5px; }
+  .drv .src { color:var(--ink); }
+  .drv .src.none { color:var(--red); }
+
+  .verdict { border:1px solid var(--rule); border-radius:10px; padding:14px 18px; background:var(--card); margin-bottom:10px; }
+  .verdict.secondary { border-style:dashed; }
+  .verdict.predicted { border-style:dotted; }
+  .verdict .rank { font-size:12px; color:var(--slate); margin-bottom:2px; }
+  .verdict .label { font-family:Newsreader, Georgia, serif; font-size:21px; font-weight:500; }
+  .verdict .setpoint { font-size:14px; color:var(--slate); }
+  .verdict .basis { font-size:12px; color:var(--slate); margin-top:4px; }
+  .verdict.death .label { color:var(--red); }
+  .verdict.live .label { color:var(--teal); }
+
+  .box { border:1px solid var(--rule); border-radius:10px; background:var(--card); padding:14px 18px; margin-top:14px; }
+  .box h4 { margin:0 0 8px; font-family:Inter, sans-serif; font-size:12px; font-weight:500; color:var(--slate); }
+  .box.evidence { border-left:3px solid var(--teal); }
+  .box.contested { border-left:3px solid var(--amber); background:var(--amber-soft); border-color:#E7D9B6; }
+  .box.silent { border-left:3px solid var(--violet); }
+  .reported { font-size:14px; color:var(--slate); }
+  .reported span { color:var(--ink); }
+  .cite { font-size:13px; color:var(--slate); margin-top:6px; }
+  .cite span { color:var(--ink); }
+  .cite.missing span { color:var(--red); }
+  .caveat { margin-top:12px; font-size:14px; color:var(--slate); border-left:2px solid var(--amber); padding-left:12px; }
+  .test { margin-top:12px; font-size:14px; color:var(--slate); border-left:2px solid var(--teal); padding-left:12px; }
+  .test b { color:var(--teal); font-weight:500; }
+  .box.contested p, .box.silent p { margin:0 0 8px; font-size:13.5px; color:var(--slate); }
+  .box.contested p:last-child, .box.silent p:last-child { margin-bottom:0; }
+  .box.contested b, .box.silent b { color:var(--ink); font-weight:500; }
+  .box.silent i, .box.contested i { font-family:Newsreader, Georgia, serif; color:var(--red); font-size:14.5px; }
+
+  .nodata { font-size:13.5px; color:var(--slate); margin-top:14px; padding-top:10px; border-top:1px solid var(--rule); }
+
+  /* ---- tree styling (inherited) ---- */
+  text { font-family:Inter, system-ui, sans-serif; }
+  .n-title { font-size:13px; font-weight:500; fill:var(--ink); }
+  .n-sub { font-size:11.5px; fill:var(--slate); }
+  .e-label { font-size:11.5px; fill:var(--slate); }
+  .e-allele { font-size:12px; font-family:Newsreader, Georgia, serif; font-style:italic; fill:var(--red); }
+  .n-box { fill:var(--card); stroke:#C3CABF; stroke-width:1; }
+  .n-state .n-box { fill:#EEF1EC; }
+  .n-live .n-box { fill:var(--teal-soft); stroke:#B9CFD2; }
+  .n-hold .n-box { fill:var(--amber-soft); stroke:#DEC894; }
+  .n-death .n-box { fill:var(--red-soft); stroke:#E3B6AE; }
+  .container .n-box { fill:none; stroke:#B9CFD2; stroke-dasharray:5 4; }
+  .group .n-box { fill:none; stroke:#CDD3C9; stroke-dasharray:2 6; }
+  .g-label { font-size:11px; fill:#9AA39C; letter-spacing:.08em; }
+  .frame .n-box { stroke:#C7CEC6; stroke-dasharray:9 5; }
+  .edge { stroke:#B6BDB2; stroke-width:1.25; fill:none; }
+
+  svg.traced .node, svg.traced .edgegroup { opacity:.16; }
+  svg.traced .node.on, svg.traced .edgegroup.on { opacity:1; }
+  svg.traced .node.on .n-box { stroke:var(--moss); stroke-width:2; }
+  svg.traced .node.on.n-live .n-box { stroke:var(--teal); }
+  svg.traced .node.on.n-hold .n-box { stroke:var(--amber); }
+  svg.traced .node.on.n-death .n-box { stroke:var(--red); }
+  svg.traced .node.on.container .n-box { stroke:var(--teal); stroke-width:1.25; }
+  svg.traced .edgegroup.on .edge { stroke:var(--moss); stroke-width:2.25; }
+  svg.traced .edgegroup.on.w-primary .edge { stroke-width:4; }
+  svg.traced .edgegroup.on.w-secondary .edge { stroke-width:1.5; stroke-dasharray:6 4; }
+  svg.traced .edgegroup.on .e-label { fill:var(--moss); font-weight:500; }
+  svg.traced .node.frame { opacity:.42; }
+  svg.traced .node.group { opacity:.3; }
+  svg.traced .node.group.on { opacity:1; }
+  svg.traced .node.group.on .n-box { stroke:var(--moss); stroke-width:1.25; stroke-dasharray:2 6; }
+  svg.traced .node.group.on .g-label { fill:var(--moss); }
+
+  @media (max-width:1200px) {
+    .layout { grid-template-columns:240px 1fr; }
+    .panel { grid-column:1 / -1; }
+  }
+  @media (max-width:820px) {
+    .layout { grid-template-columns:1fr; }
+    .controls { position:static; max-height:none; }
+    .wrap { padding:20px 18px 48px; }
+  }
+</style>
+
+<div class="wrap">
+  <header class="bar">
+    <h1>Algorithmic chromosome end fate</h1>
+    <div class="sig" id="sig"></div>
+    <div class="count" id="count"></div>
+  </header>
+  <div class="layout">
+    <aside class="controls" id="controls"></aside>
+    <div class="figure" id="figure"></div>
+    <div class="panel" id="panel"></div>
+  </div>
+</div>
+
+<script>
+"use strict";
+
+/* ==========================================================================
+   DATA LAYER 1: tree geometry (unchanged from the hand-built deck)
+   ========================================================================== */
+
+const NODES = [
+  {id:'g_len',  k:'group', x:40,  y:10,   w:560, h:202, mem:['q1','sfull','sstable','serode'], label:'length maintenance', lxx:54, lyy:28},
+  {id:'g_res',  k:'group', x:40,  y:330,  w:376, h:294, mem:['q3','q4','tint','tkb'], label:'resection', lxx:54, lyy:348},
+  {id:'g_ckpt', k:'group', x:40,  y:650,  w:376, h:384, mem:['q5','q6','q7','q8'], label:'checkpoint activation', lxx:54, lyy:668},
+  {id:'g_arr',  k:'group', x:40,  y:1060, w:376, h:204, mem:['arr','qR'], label:'arrest resolution', lxx:54, lyy:1078},
+  {id:'g_join', k:'group', x:40,  y:1290, w:376, h:294, mem:['qD','qE','qF'], label:'end joining', lxx:54, lyy:1308},
+
+  {id:'fates',    k:'container', frame:true, x:500, y:912,  w:262, h:750, t:'', s:'', label:'fates', lxx:514, lyy:932},
+  {id:'prolif',   k:'container', x:508, y:950,  w:230, h:402, t:'', s:'', label:'proliferating', lxx:522, lyy:970},
+  {id:'deaths',   k:'container', x:508, y:1382, w:230, h:264, t:'', s:'', label:'death', lxx:522, lyy:1402},
+
+  {id:'q1',       k:'q',     x:60,  y:44,   w:340, h:64,  t:'Is the repeat tract maintained?', s:'telomerase sets it, Tel1 and Ku tune it'},
+  {id:'sfull',    k:'state', x:40,  y:144,  w:170, h:52,  t:'full length', s:'maintained'},
+  {id:'sstable',  k:'state', x:230, y:144,  w:170, h:52,  t:'short but stable', s:'lower setpoint'},
+  {id:'serode',   k:'state', x:420, y:144,  w:170, h:52,  t:'eroding', s:'no maintenance'},
+  {id:'q2',       k:'q',     x:60,  y:240,  w:340, h:64,  t:'Are CST, Ku and Rap1 all bound?', s:'occupancy, not sequence length'},
+  {id:'q3',       k:'q',     x:60,  y:364,  w:340, h:64,  t:'Is a resection nuclease active?', s:'Exo1, or Sgs1-Dna2 in its absence'},
+  {id:'q4',       k:'q',     x:60,  y:454,  w:340, h:64,  t:'How deep does resection run?', s:'CST loss is the dominant term'},
+  {id:'tint',     k:'state', x:60,  y:544,  w:160, h:64,  t:'intermediate', s:'duplex remains'},
+  {id:'tkb',      k:'state', x:240, y:544,  w:160, h:64,  t:'kilobase', s:'no duplex left'},
+  {id:'q5',       k:'q',     x:60,  y:684,  w:340, h:64,  t:'Is there enough ssDNA to signal?', s:'RPA-coated single strand is the signal'},
+  {id:'q6',       k:'q',     x:60,  y:774,  w:340, h:64,  t:'Is the checkpoint cascade functional?', s:'Mec1, Rad9, and either Rad53 or Chk1'},
+  {id:'q7',       k:'q',     x:60,  y:864,  w:340, h:64,  t:'Is this lesion clamp-amplified?', s:'Rad24 and 9-1-1 raise resection and Mec1 output'},
+  {id:'q8',       k:'q',     x:60,  y:954,  w:340, h:64,  t:'Is the 9-1-1 clamp loaded?', s:'Rad24, Mec3, Ddc1, Rad17'},
+  {id:'arr',      k:'hold',  x:60,  y:1094, w:340, h:64,  t:'arrest', s:'the end keeps degrading while the cell waits'},
+  {id:'qR',       k:'q',     x:60,  y:1184, w:340, h:64,  t:'How is the end resolved?', s:'recombination, adaptation, or neither'},
+  {id:'qD',       k:'q',     x:60,  y:1324, w:340, h:64,  t:'Is duplex DNA left at the terminus?', s:'reads the depth set above'},
+  {id:'qE',       k:'q',     x:60,  y:1414, w:340, h:64,  t:'Is NHEJ repression intact here?', s:'Rap1 load, with Mec1 and 9-1-1'},
+  {id:'qF',       k:'q',     x:60,  y:1504, w:340, h:64,  t:'Is the NHEJ machinery present?', s:'Ku, Lig4 and Lif1 all required'},
+
+  {id:'subnorm',  k:'live',  x:516, y:986,  w:212, h:56,  t:'normal setpoint', s:'nothing else is asked'},
+  {id:'submaint', k:'live',  x:516, y:1060, w:212, h:56,  t:'tract still maintained', s:'no nuclease acts on it'},
+  {id:'subrec',   k:'live',  x:516, y:1134, w:212, h:56,  t:'recombination', s:'survivor telomeres'},
+  {id:'subshort', k:'live',  x:516, y:1208, w:212, h:56,  t:'short setpoint', s:'telomerase-maintained'},
+  {id:'subunsig', k:'live',  x:516, y:1282, w:212, h:56,  t:'unsignalled lesion', s:'divides while resection runs'},
+  {id:'gl',       k:'death', x:516, y:1418, w:212, h:64,  t:'death by gene loss', s:'truncation, chromosome loss'},
+  {id:'fus',      k:'death', x:516, y:1492, w:212, h:64,  t:'death by fusion', s:'dicentric, breakage-fusion-bridge'},
+  {id:'arrdeath', k:'death', x:516, y:1566, w:212, h:64,  t:'death in arrest', s:'never divides again'}
+];
+
+const CQ = ' L22 1356 L52 1356';
+const EDGES = [
+  {id:'t1', d:'M140 108 L125 138', ax:60,  ay:126, aa:'start'},
+  {id:'t2', d:'M230 108 L315 138', ax:148, ay:126, aa:'start'},
+  {id:'t3', d:'M320 108 L505 138', ax:520, ay:124, aa:'start'},
+  {id:'m1', d:'M125 196 L190 232', ax:64, ay:214, aa:'start'},
+  {id:'m2', d:'M315 196 L250 232', ax:64, ay:214, aa:'start'},
+  {id:'m3', d:'M505 196 L290 232', ax:64, ay:214, aa:'start'},
+  {id:'a1', d:'M400 296 L488 296 L488 1014 L508 1014', l:'yes', lx:496, ly:286, la:'start', ax:496, ay:308, aa:'start'},
+  {id:'a2', d:'M60 288 L22 288'+CQ, l:'yes, short', lx:62, ly:222, la:'start', ax:64, ay:206, aa:'start'},
+  {id:'a3', d:'M230 304 L230 356', l:'no', lx:242, ly:322, la:'start', ax:218, ay:322, aa:'end'},
+  {id:'b1', d:'M400 396 L478 396 L478 1088 L508 1088', l:'no', lx:486, ly:386, la:'start', ax:486, ay:408, aa:'start'},
+  {id:'b2', d:'M60 410 L14 410 L14 1216 L52 1216', l:'no, eroding', lx:62, ly:352, la:'start', ax:64, ay:440, aa:'start'},
+  {id:'b3', d:'M230 428 L230 446', l:'yes', lx:242, ly:437, la:'start', ax:218, ay:437, aa:'end'},
+  {id:'c1', d:'M180 518 L140 536', l:'CST intact or partial', lx:100, ly:526, ax:100, ay:499, aa:'middle'},
+  {id:'c2', d:'M280 518 L320 536', l:'CST fully lost', lx:330, ly:526, ax:368, ay:526, aa:'start'},
+  {id:'d1', d:'M140 608 L200 676', ax:126, ay:645, aa:'middle'},
+  {id:'d2', d:'M320 608 L260 676', ax:334, ay:645, aa:'middle'},
+  {id:'e1', d:'M60 702 L22 702'+CQ, l:'no', lx:44, ly:688, ax:64, ay:747, aa:'start'},
+  {id:'e2', d:'M230 748 L230 766', l:'yes', lx:242, ly:757, la:'start', ax:218, ay:757, aa:'end'},
+  {id:'f1', d:'M60 792 L22 792'+CQ, l:'no', lx:44, ly:778, ax:64, ay:837, aa:'start'},
+  {id:'f2', d:'M230 838 L230 856', l:'yes', lx:242, ly:847, la:'start', ax:218, ay:847, aa:'end'},
+  {id:'g1', d:'M230 928 L230 946', l:'yes', lx:242, ly:937, la:'start', ax:218, ay:937, aa:'end'},
+  {id:'g2', d:'M400 896 L418 896 L418 1106 L404 1106', l:'no', lx:418, ly:882, ax:418, ay:866, aa:'middle'},
+  {id:'h1', d:'M60 986 L22 986'+CQ, l:'no', lx:44, ly:972, ax:64, ay:1031, aa:'start'},
+  {id:'h2', d:'M230 1018 L230 1086', l:'yes', lx:242, ly:1046, la:'start', ax:218, ay:1046, aa:'end'},
+  {id:'i1', d:'M230 1158 L230 1176', ax:218, ay:1167, aa:'end'},
+  {id:'rB', d:'M400 1200 L420 1200 L420 1162 L508 1162', l:'recombination', lx:428, ly:1182, la:'start', ax:428, ay:1204, aa:'start'},
+  {id:'rA', d:'M400 1216 L432 1216 L432 1450 L508 1450', l:'adaptation', lx:440, ly:1272, la:'start', ax:440, ay:1294, aa:'start'},
+  {id:'rC', d:'M400 1232 L444 1232 L444 1598 L508 1598', l:'neither', lx:452, ly:1340, la:'start', ax:452, ay:1362, aa:'start'},
+  {id:'n1', d:'M400 1356 L456 1356 L456 1450 L508 1450', l:'no', lx:462, ly:1344, la:'start', ax:462, ay:1326, aa:'start'},
+  {id:'n2', d:'M230 1388 L230 1406', l:'yes', lx:242, ly:1397, la:'start', ax:218, ay:1397, aa:'end'},
+  {id:'p1', d:'M400 1430 L468 1430 L468 1236 L508 1236', l:'yes, capped end', lx:474, ly:1418, la:'start', ax:474, ay:1398, aa:'start'},
+  {id:'p3', d:'M400 1454 L480 1454 L480 1310 L508 1310', l:'yes, uncapped end', lx:486, ly:1468, la:'start', ax:486, ay:1488, aa:'start'},
+  {id:'p2', d:'M230 1478 L230 1496', l:'no', lx:242, ly:1487, la:'start', ax:218, ay:1487, aa:'end'},
+  {id:'s1', d:'M400 1520 L496 1520 L496 1236 L508 1236', l:'no', lx:502, ly:1508, la:'start', ax:502, ay:1490, aa:'start'},
+  {id:'s2', d:'M400 1552 L460 1552 L460 1524 L508 1524', l:'yes', lx:466, ly:1568, la:'start', ax:466, ay:1586, aa:'start'}
+];
+
+/* ==========================================================================
+   DATA LAYER 2: gene roster, allele effects, rules
+   Each effect carries its own citation. That citation is the warrant for one
+   branch, and it is separate from the whole-genotype scholarship below.
+   ========================================================================== */
+
+const D = '\u0394';
+const X = 'needs citation';
+
+const REFS = {
+  garvik:   'Garvik, Carson & Hartwell 1995, Mol Cell Biol 15:6128',
+  addinall: 'Addinall et al. 2008, Genetics 180:2251',
+  zubko:    'Zubko, Guillard & Lydall 2004, Genetics 168:103',
+  maringele:'Maringele & Lydall 2002, Genes Dev 16:1919',
+  ngo:      'Ngo & Lydall 2010, PLoS Genet 6:e1001072',
+  toczyski: 'Toczyski, Galgoczy & Hartwell 1997, Cell 90:1097',
+  klermund: 'Klermund et al. 2014, Cell Rep 9:324',
+  bonetti:  'Bonetti et al. 2009, Mol Cell 35:70',
+  west:     'Westmoreland et al. 2018, DNA Repair 62:12',
+  coutelier:'Coutelier et al. 2018, Genes Dev 32:1499'
+};
+
+const GENE_GROUPS = [
+  { title:'Capping', genes:['CDC13','YKU70','YKU80'] },
+  { title:'Length maintenance', genes:['TLC1','EST2','TEL1','MRE11'] },
+  { title:'Resection', genes:['EXO1','SGS1'] },
+  { title:'Checkpoint cascade', genes:['MEC1','RAD9','RAD53','CHK1'] },
+  { title:'9-1-1 clamp and loader', genes:['RAD24','RAD17','MEC3','DDC1'] },
+  { title:'Arrest resolution', genes:['RAD52','PIF1','CDC5'] },
+  { title:'End joining', genes:['DNL4','LIF1'] }
+];
+
+const GENES = {
+  CDC13: ['CDC13','cdc13-1','cdc13-2','cdc13'+D],
+  YKU70: ['YKU70','yku70'+D],
+  YKU80: ['YKU80','yku80'+D],
+  TLC1:  ['TLC1','tlc1'+D],
+  EST2:  ['EST2','est2'+D],
+  TEL1:  ['TEL1','tel1'+D],
+  MRE11: ['MRE11','mre11'+D],
+  EXO1:  ['EXO1','exo1'+D],
+  SGS1:  ['SGS1','sgs1'+D],
+  MEC1:  ['MEC1','mec1'+D],
+  RAD9:  ['RAD9','rad9'+D],
+  RAD53: ['RAD53','rad53'+D],
+  CHK1:  ['CHK1','chk1'+D],
+  RAD24: ['RAD24','rad24'+D],
+  RAD17: ['RAD17','rad17'+D],
+  MEC3:  ['MEC3','mec3'+D],
+  DDC1:  ['DDC1','ddc1'+D],
+  RAD52: ['RAD52','rad52'+D],
+  PIF1:  ['PIF1','pif1'+D],
+  CDC5:  ['CDC5','cdc5-ad'],
+  DNL4:  ['DNL4','dnl4'+D],
+  LIF1:  ['LIF1','lif1'+D]
+};
+
+/* Allele effect table. Effects may be gated on temperature (tMin inclusive,
+   tMax exclusive) and on a predicate over the state resolved so far. */
+const ALLELES = {};
+ALLELES['cdc13-1'] = { effects:[
+  { tMin:-99, tMax:26, kind:'silent', why:'the mutant protein folds and holds the overhang below about 26 °C', cite:REFS.garvik },
+  { tMin:26,  tMax:31, kind:'cap', target:'cst', severity:'partial', cite:REFS.addinall },
+  { tMin:31,  tMax:99, kind:'cap', target:'cst', severity:'full', cite:REFS.garvik }
+]};
+ALLELES['cdc13-2'] = { effects:[
+  { kind:'tract', value:'eroding', why:'Est1 recruitment is abolished, so there is no setpoint', cite:X }
+]};
+ALLELES['cdc13'+D] = { effects:[
+  { kind:'tract', value:'eroding', why:'Est1 recruitment goes with the protein', cite:REFS.ngo },
+  { kind:'cap', target:'cst', severity:'full', cite:REFS.ngo }
+]};
+ALLELES['yku70'+D] = { effects:[
+  { kind:'tract', value:'short', why:'Ku binds the TLC1 RNA, so the equilibrium settles short', cite:REFS.maringele },
+  { kind:'cap', target:'ku', severity:'full', cite:REFS.maringele },
+  { kind:'ssdna', delta:3, when:'lesion:ku', tMin:30, tMax:99, why:'ssDNA at a Ku-less end rises with temperature', cite:REFS.maringele },
+  { kind:'machinery', target:'Ku', cite:REFS.maringele }
+]};
+ALLELES['yku80'+D] = ALLELES['yku70'+D];
+ALLELES['tlc1'+D] = { effects:[
+  { kind:'tract', value:'eroding', why:'telomerase is removed entirely', cite:REFS.coutelier }
+]};
+ALLELES['est2'+D] = { effects:[
+  { kind:'tract', value:'eroding', why:'the catalytic subunit is removed', cite:REFS.coutelier }
+]};
+ALLELES['tel1'+D] = { effects:[
+  { kind:'tract', value:'short', why:'telomerase is no longer directed to the shortest ends, so telomeres shorten and then hold', cite:X }
+]};
+ALLELES['mre11'+D] = { effects:[
+  { kind:'tract', value:'short', why:'the setpoint falls without action at the joint', cite:X }
+]};
+ALLELES['exo1'+D] = { effects:[
+  { kind:'nuclease', target:'Exo1', cite:REFS.zubko },
+  { kind:'ssdna', delta:-5, when:'nuclease:partial', why:'the main nuclease is gone and Sgs1-Dna2 makes less', cite:REFS.zubko }
+]};
+ALLELES['sgs1'+D] = { effects:[
+  { kind:'nuclease', target:'Sgs1-Dna2', cite:REFS.ngo }
+]};
+ALLELES['mec1'+D] = { effects:[
+  { kind:'cascade', target:'Mec1', cite:REFS.addinall },
+  { kind:'repression', target:'Mec1', cite:X }
+]};
+ALLELES['rad9'+D] = { effects:[
+  { kind:'cascade', target:'Rad9', cite:REFS.addinall },
+  { kind:'ssdna', delta:3, when:'lesion:cst', why:'Rad9 restrains resection as well as reporting it', cite:REFS.zubko }
+]};
+ALLELES['rad53'+D] = { effects:[
+  { kind:'cascade', target:'Rad53', contested:true, cite:REFS.addinall }
+]};
+ALLELES['chk1'+D] = { effects:[
+  { kind:'cascade', target:'Chk1', contested:true, cite:REFS.addinall }
+]};
+ALLELES['rad24'+D] = { effects:[
+  { kind:'clamp', target:'Rad24', cite:REFS.zubko },
+  { kind:'ssdna', delta:-1, when:'amplified', why:'ssDNA falls at a clamp-amplified lesion, but not below threshold in any modelled background', cite:REFS.zubko }
+]};
+ALLELES['rad17'+D] = { effects:[
+  { kind:'clamp', target:'Rad17', cite:REFS.addinall },
+  { kind:'repression', target:'Rad17', inferred:true, cite:X }
+]};
+ALLELES['mec3'+D] = { effects:[
+  { kind:'clamp', target:'Mec3', cite:REFS.addinall },
+  { kind:'repression', target:'Mec3', cite:X }
+]};
+ALLELES['ddc1'+D] = { effects:[
+  { kind:'clamp', target:'Ddc1', cite:REFS.addinall },
+  { kind:'repression', target:'Ddc1', cite:X }
+]};
+ALLELES['rad52'+D] = { effects:[
+  { kind:'exit', target:'recombination', open:false, cite:X }
+]};
+ALLELES['pif1'+D] = { effects:[
+  { kind:'exit', target:'recombination', favour:true, why:'an inhibitor of recombination at ends is removed', cite:REFS.ngo }
+]};
+ALLELES['cdc5-ad'] = { effects:[
+  { kind:'exit', target:'adaptation', open:false, cite:REFS.toczyski }
+]};
+ALLELES['dnl4'+D] = { effects:[ { kind:'machinery', target:'Lig4', cite:X } ]};
+ALLELES['lif1'+D] = { effects:[ { kind:'machinery', target:'Lif1', cite:X } ]};
+
+/* Declared rules. Every one is a place the tree arbitrates, so each is named,
+   cited and reported in the audit box rather than buried in the traversal. */
+const RULES = {
+  tractRank: { eroding:3, short:2, full:1 },
+  lesionRank: { cst:3, ku:2, erosion:1 },
+  nucleasesByLesion: { cst:['Exo1','Sgs1-Dna2'], ku:['Exo1'], erosion:['Exo1','Sgs1-Dna2'], none:[] },
+  ssdnaThreshold: 10,
+  ssdnaBase: { none:0, intermediate:8, kilobase:16 },
+  ssdnaLesion: { cst:3, erosion:3, ku:0, none:0 },
+  cascadeRequires: [
+    { gene:'MEC1', name:'Mec1' }, { gene:'RAD9', name:'Rad9' },
+    { gene:'RAD53', name:'Rad53', contested:true }, { gene:'CHK1', name:'Chk1', contested:true }
+  ],
+  clampRequires: [
+    { gene:'RAD24', name:'Rad24' }, { gene:'RAD17', name:'Rad17' },
+    { gene:'MEC3', name:'Mec3' }, { gene:'DDC1', name:'Ddc1' }
+  ],
+  repressionRequires: [
+    { gene:'MEC1', name:'Mec1' }, { gene:'MEC3', name:'Mec3' },
+    { gene:'DDC1', name:'Ddc1' }, { gene:'RAD17', name:'Rad17', inferred:true }
+  ],
+  machineryRequires: [
+    { gene:'YKU70', name:'Ku' }, { gene:'YKU80', name:'Ku' },
+    { gene:'DNL4', name:'Lig4' }, { gene:'LIF1', name:'Lif1' }
+  ]
+};
+
+/* Rules that are known to be contested, surfaced whenever they decide a branch. */
+const CONTESTED_NOTES = {
+  cascadeEffector: 'Rad9 is the adaptor for both the Rad53 and Chk1 arms, so <i>chk1'+D+'</i> should retain Rad53 signalling that <i>rad9'+D+'</i> lacks. The colony assay reports them alike, so the cascade rule treats either effector as required and cannot separate them.',
+  amplification: 'Two lesions answer the amplification question differently. The rule scores the deeper lesion, which is what the hand-built <i>yku70'+D+' cdc13-1</i> page did. If <i>rad24'+D+'</i> turns out to reduce ssDNA in a Ku-less end as strongly as it does at a CST-failed end, the node has nothing left to explain.',
+  repressionShort: 'Repression is only tested on a short tract. On a full-length tract Rap1 load carries it alone, which is why clamp deletions suppress <i>cdc13-1</i> instead of driving fusion.',
+  mre11: 'Mre11 is placed on the setpoint, not at the joint. Bonetti 2009 and Foster 2006 disagree in sign about MRX at uncapped ends, and there is no initiation node, so neither position is inherited.'
+};
+
+/* ==========================================================================
+   DATA LAYER 3: whole-genotype scholarship
+   Keyed on the exact set of non-wild-type alleles plus a temperature window.
+   Absent record means the page renders as pure prediction.
+   ========================================================================== */
+
+const SCHOLARSHIP = [
+  { sets:[[]], tMin:-99, tMax:99, through:'q2',
+    reported:'viable; telomeres held near 300 bp across generations', cite:'',
+    caveat:'Two questions and no branch. Everything below the cap question exists because some allele elsewhere answers it no.',
+    test:'Nothing here can fail. It fixes the reference trace that every other genotype departs from, and marks how much of the tree an unperturbed end never reaches.' },
+
+  { sets:[['cdc13-1']], tMin:-99, tMax:26, through:'q2',
+    reported:'viable at 23 to 25 °C', cite:REFS.garvik,
+    caveat:'Every cdc13-1 double traces identically here, so no suppressor is distinguishable at this temperature.',
+    test:'Langston et al. 2020 report ssDNA in cdc13-1 even at 23 °C. If that is confirmed as checkpoint-competent, the cap question is answered yes on a technicality and the state needs a partial cap below 26 °C.' },
+
+  { sets:[['cdc13-1']], tMin:26, tMax:31, through:'q3',
+    reported:'no colonies at 27 °C', cite:REFS.addinall+'; '+REFS.klermund,
+    caveat:'No direct resection-depth map exists at 27 °C. The partial cap severity is inferred from the milder phenotype, and every step below it inherits that inference.',
+    test:'A cdc5-ad derivative should stay arrested and large-budded instead of losing chromosomes. If it dies on the same schedule with the same instability, adaptation is not the split.' },
+
+  { sets:[['cdc13-1','rad9'+D],['cdc13-1','chk1'+D]], tMin:26, tMax:31, through:'q3',
+    reported:'both are strong suppressors; colonies at 27 to 28 °C', cite:REFS.addinall+', Table 1',
+    caveat:'The colony assay reports rad9'+D+' and chk1'+D+' alike, which means any difference between them is invisible here.',
+    test:'Rad53 phosphorylation should persist in cdc13-1 chk1'+D+' and be absent in cdc13-1 rad9'+D+', with colony counts equal. If chk1'+D+' also loses Rad53 activation, Rad9 and Chk1 are not in the arrangement the cascade rule assumes.' },
+
+  { sets:[['cdc13-1','rad24'+D],['cdc13-1','rad17'+D],['cdc13-1','ddc1'+D],['cdc13-1','mec3'+D]], tMin:26, tMax:31, through:'q3',
+    reported:'strong suppression; colonies at 27 to 28 °C', cite:REFS.addinall+', Table 1; '+REFS.zubko,
+    caveat:'Rad24 lowers ssDNA as well as signal, so it could be suppressing at the resection question; the other three could not.',
+    test:'Rad53 phosphorylation should be absent in all four. If any one signals normally and still forms colonies, clamp loading is not what the rescue runs through.' },
+
+  { sets:[['cdc13-1','exo1'+D]], tMin:26, tMax:31, through:'q3',
+    reported:'suppression; less ssDNA than cdc13-1', cite:REFS.zubko,
+    caveat:'Same fate as the cascade and clamp doubles, reached at a different node. Here the substrate never crosses the threshold.',
+    test:'QAOS should place the ssDNA below both cdc13-1 and cdc13-1 rad9'+D+'.' },
+
+  { sets:[['cdc13-1']], tMin:31, tMax:99, through:'q6',
+    reported:'Rad9-dependent G2/M arrest at four to eight hours; no colonies', cite:REFS.garvik+'; '+REFS.toczyski,
+    caveat:'Two observation windows on one page. The arrest is a microscopy endpoint at hours; the colony failure is a plate endpoint at days. The resolution step is the bridge between them.',
+    test:'cdc13-1 cdc5-ad cells should stay large-budded while cdc13-1 mostly adapts by 24 hours. If that split does not hold, the two outcomes are not reached by different routes.' },
+
+  { sets:[['cdc13-1','rad9'+D]], tMin:31, tMax:99, through:'qD',
+    reported:'continued division, rapid loss of viability', cite:REFS.garvik+'; '+REFS.zubko,
+    caveat:'Losing the cascade changes which nuclease operates, so the cascade answer feeds back onto resection. The state model resolves ssDNA before traversal, which is why the trace can hold what a pure tree walk could not.',
+    test:'Same genotype as the 27 °C setting, opposite outcome, with depth the only differing answer. If a strain held at 27 °C long enough to reach kilobase depth still forms colonies, depth is not the separator.' },
+
+  { sets:[['cdc13-1','rad24'+D]], tMin:31, tMax:99, through:'q8',
+    reported:'no arrest at high temperature', cite:REFS.zubko,
+    test:'Compare with yku70'+D+' rad24'+D+', where the amplification question answers no. If rad24'+D+' reduces ssDNA in both backgrounds equally, the amplification node has nothing to explain.' },
+
+  { sets:[['cdc13-1','exo1'+D]], tMin:31, tMax:99, through:'q6',
+    reported:'arrests at medial nuclear division, slower than cdc13-1; less ssDNA at Y\u2032 600', cite:REFS.maringele+'; '+REFS.bonetti,
+    caveat:'This is the genotype a single Exo1 question would get wrong. Asking only about Exo1 sends this strain to the tract-maintained node and predicts growth, which is not what happens.',
+    test:'A cdc13-1 exo1'+D+' sgs1'+D+' double at 36 °C should answer no at the resection question and survive. That double is not directly reported.' },
+
+  { sets:[['cdc13-1','rad9'+D,'sgs1'+D,'exo1'+D]], tMin:31, tMax:99, through:'q3',
+    reported:'viable; linear chromosomes maintained without Cdc13 capping', cite:REFS.ngo,
+    caveat:'Protection is never restored. The cell divides because the reaction that would destroy the end is gone.',
+    test:'rad9'+D+' is in the genotype and the trace stops before the cascade question, so the engine predicts cdc13-1 exo1'+D+' sgs1'+D+' is viable without it. That double is not reported. If it is inviable, a node is missing between resection and the cascade.' },
+
+  { sets:[['cdc13-1','yku70'+D],['cdc13-1','yku80'+D]], tMin:31, tMax:99, through:'q5',
+    reported:'about 10 kb per telomere end; survival is strain-background dependent', cite:REFS.west,
+    caveat:'Both alleles answer no at the cap question and only the deeper one is scored.',
+    test:'The background-dependent survivors have no branch here. If they are Rad52-dependent, the recombination exit should carry them and the prediction is wrong to end in death.' },
+
+  { sets:[['cdc13'+D,'exo1'+D,'sgs1'+D,'rad9'+D,'rad24'+D,'pif1'+D]], tMin:-99, tMax:99, through:'q1',
+    reported:'viable', cite:REFS.ngo,
+    test:'These telomeres should look like survivor telomeres on a Southern and the strain should die on deletion of RAD52. If it survives without Rad52, the recombination exit is the wrong one.' },
+
+  { sets:[['cdc13-2']], tMin:-99, tMax:99, through:'q6',
+    reported:'senescence', cite:X,
+    caveat:'Survivors do not restore a normal end: type I amplify Y\u2032 elements, type II carry long heterogeneous tracts.',
+    test:'The amplification answer is untested here. If rad24'+D+' rescues cdc13-2 senescence, this is a clamp-amplified lesion after all and the rule flips.' },
+
+  { sets:[['tlc1'+D],['est2'+D]], tMin:-99, tMax:99, through:'q6',
+    reported:'Mec1 arrest at the shortest end; adaptation promotes genome instability', cite:REFS.coutelier,
+    test:'Survivor frequency should track Rad52 and adaptation should track Cdc5. If checkpoint deletion raises survivor frequency, the arrest node is doing something the engine does not have it doing.' },
+
+  { sets:[['est2'+D,'rad52'+D],['tlc1'+D,'rad52'+D]], tMin:-99, tMax:99, through:'q7',
+    reported:'senescence, no recombination escape', cite:X,
+    caveat:'Whether NHEJ also contributes is the Hackett versus Meyer and Bailis dispute, which needs an est2'+D+' dnl4'+D+' record this table does not have.',
+    test:'A cdc5-ad derivative should move the whole population into death in arrest. If it dies at the same rate, adaptation is not contributing.' },
+
+  { sets:[['tel1'+D]], tMin:-99, tMax:99, through:'qE',
+    reported:'very short, stable; viable', cite:X,
+    caveat:'The difference from cdc13-2 is maintenance, not recruitment. tel1'+D+' reaches a new equilibrium; cdc13-2 has none and erodes without a floor.',
+    test:'Fusion frequency should be at background. Any measurable Lig4-dependent fusion in the single mutant means repression is already partial at this setpoint.' },
+
+  { sets:[['mec1'+D,'tel1'+D]], tMin:-99, tMax:99, through:'qF',
+    reported:'Lig4-dependent telomere-telomere fusions', cite:X,
+    test:'Fusions should disappear in a dnl4'+D+' derivative and should not require the setpoint to fall further. If they persist without Lig4, the terminal reaction is not NHEJ.' },
+
+  { sets:[['mec3'+D,'tel1'+D],['ddc1'+D,'tel1'+D],['mre11'+D,'mec1'+D]], tMin:-99, tMax:99, through:'qF',
+    reported:'highest fusion rates', cite:X,
+    caveat:'Mre11 reaches this outcome by lowering the setpoint, not by acting at the joint.',
+    test:'If mre11'+D+' raises fusion without shortening telomeres, it is acting at the joint and the rule has it on the wrong node.' },
+
+  { sets:[['yku70'+D],['yku80'+D]], tMin:-99, tMax:30, through:'q5',
+    reported:'viable, short and stable; telomeric ssDNA detectable without arrest', cite:REFS.maringele,
+    caveat:'Putting the temperature term on the ssDNA level is an inference. What is reported is arrest at 36 °C and none at 23 °C, which the engine can only express as single strand crossing threshold.',
+    test:'Rad53 phosphorylation should track the QAOS measurement across the range. If ssDNA is flat across temperature and arrest is not, the temperature is acting somewhere other than this node.' },
+
+  { sets:[['yku70'+D],['yku80'+D]], tMin:30, tMax:99, through:'q7',
+    reported:'G2 arrest and loss of viability; ssDNA rises at Y\u2032 600', cite:REFS.maringele,
+    caveat:'Roughly a fifth of this arrest runs through Mad2 rather than the damage cascade. There is one cascade question and it cannot separate them.',
+    test:'A mad2'+D+' derivative should partially relieve the arrest without changing the ssDNA. If it changes ssDNA too, the spindle checkpoint is feeding back on resection and needs a node.' },
+
+  { sets:[['yku70'+D,'exo1'+D],['yku80'+D,'exo1'+D]], tMin:30, tMax:99, through:'q3',
+    reported:'extremely low subtelomeric ssDNA; suppresses arrest and death', cite:REFS.maringele,
+    caveat:'The contrast with cdc13-1 exo1'+D+' is the whole content of this record. Same deletion, same question, opposite answer, because the two ends recruit different nucleases.',
+    test:'A yku70'+D+' sgs1'+D+' double should look like yku70'+D+' alone. If it suppresses, Sgs1-Dna2 does act at this end and the pathway set is wrong.' },
+
+  { sets:[['yku70'+D,'rad9'+D],['yku80'+D,'rad9'+D]], tMin:30, tMax:99, through:'q6',
+    reported:'grows at 36 °C; ssDNA comparable to yku70'+D, cite:REFS.maringele,
+    caveat:'Two independent things protect this cell. Repression is intact, and even if it were lifted, yku70'+D+' has removed a required NHEJ factor.',
+    test:'Residual arrest should remain and should be Mad2-dependent. If a mad2'+D+' derivative grows no better, the spindle contribution is not there.' },
+
+  { sets:[['yku70'+D,'rad24'+D],['yku80'+D,'rad24'+D]], tMin:30, tMax:99, through:'q7',
+    reported:'minor effect on growth at restrictive temperature', cite:REFS.maringele,
+    caveat:'Compare with the rad9'+D+' record. rad9'+D+' rescues and rad24'+D+' does not, because this lesion is not clamp-amplified. The same pair of deletions at a CST-failed end both rescue.',
+    test:'If rad24'+D+' turns out to reduce ssDNA in yku70'+D+' as strongly as it does in cdc13-1, the amplification question has nothing to explain and should be removed.' }
+];
+
+const PRESETS = [
+  { name:'wild type', temp:23, set:{} },
+  { name:'cdc13-1, permissive', temp:23, set:{CDC13:'cdc13-1'} },
+  { name:'cdc13-1, semi-permissive', temp:27, set:{CDC13:'cdc13-1'} },
+  { name:'cdc13-1 rad9'+D+', semi-permissive', temp:27, set:{CDC13:'cdc13-1', RAD9:'rad9'+D} },
+  { name:'cdc13-1 rad24'+D+', semi-permissive', temp:27, set:{CDC13:'cdc13-1', RAD24:'rad24'+D} },
+  { name:'cdc13-1 exo1'+D+', semi-permissive', temp:27, set:{CDC13:'cdc13-1', EXO1:'exo1'+D} },
+  { name:'cdc13-1, nonpermissive', temp:36, set:{CDC13:'cdc13-1'} },
+  { name:'cdc13-1 rad9'+D+', nonpermissive', temp:36, set:{CDC13:'cdc13-1', RAD9:'rad9'+D} },
+  { name:'cdc13-1 exo1'+D+', nonpermissive', temp:36, set:{CDC13:'cdc13-1', EXO1:'exo1'+D} },
+  { name:'cdc13-1 rad9'+D+' exo1'+D+' sgs1'+D, temp:36, set:{CDC13:'cdc13-1', RAD9:'rad9'+D, EXO1:'exo1'+D, SGS1:'sgs1'+D} },
+  { name:'cdc13-1 yku70'+D, temp:36, set:{CDC13:'cdc13-1', YKU70:'yku70'+D} },
+  { name:'cdc13'+D+' sextuple', temp:30, set:{CDC13:'cdc13'+D, EXO1:'exo1'+D, SGS1:'sgs1'+D, RAD9:'rad9'+D, RAD24:'rad24'+D, PIF1:'pif1'+D} },
+  { name:'cdc13-2', temp:30, set:{CDC13:'cdc13-2'} },
+  { name:'tlc1'+D, temp:30, set:{TLC1:'tlc1'+D} },
+  { name:'est2'+D+' rad52'+D, temp:30, set:{EST2:'est2'+D, RAD52:'rad52'+D} },
+  { name:'tel1'+D, temp:30, set:{TEL1:'tel1'+D} },
+  { name:'mec1'+D+' tel1'+D, temp:30, set:{MEC1:'mec1'+D, TEL1:'tel1'+D} },
+  { name:'mec3'+D+' tel1'+D, temp:30, set:{MEC3:'mec3'+D, TEL1:'tel1'+D} },
+  { name:'yku70'+D+', permissive', temp:23, set:{YKU70:'yku70'+D} },
+  { name:'yku70'+D+', nonpermissive', temp:36, set:{YKU70:'yku70'+D} },
+  { name:'yku70'+D+' exo1'+D, temp:36, set:{YKU70:'yku70'+D, EXO1:'exo1'+D} },
+  { name:'yku70'+D+' rad9'+D, temp:36, set:{YKU70:'yku70'+D, RAD9:'rad9'+D} },
+  { name:'yku70'+D+' rad24'+D, temp:36, set:{YKU70:'yku70'+D, RAD24:'rad24'+D} }
+];
+
+/* ==========================================================================
+   APPLICATION STATE
+   ========================================================================== */
+
+const SELECTION = {};
+Object.keys(GENES).forEach(function (g) { SELECTION[g] = GENES[g][0]; });
+let TEMP = 23;
+
+/* ==========================================================================
+   BASE CONTROLLER 1: build the control column
+   ========================================================================== */
+
+function buildInterface() {
+  const host = document.getElementById('controls');
+
+  host.innerHTML = composePresetMarkup() + composeTemperatureMarkup() + composeGeneMarkup();
+  wireControlEvents(host);
+
+  function composePresetMarkup() {
+    // VIEW: preset chooser and reset (TERMINAL)
+    let s = '<div class="presetbox"><select id="preset"><option value="">Load a genotype from the deck</option>';
+    PRESETS.forEach(function (p, idx) {
+      s += '<option value="' + idx + '">' + p.name + '</option>';
+    });
+    s += '</select><button class="reset" id="reset">Clear to wild type</button></div>';
+    return s;
+  }
+
+  function composeTemperatureMarkup() {
+    // VIEW: temperature slider shell, filled by refreshTemperatureReadout (TERMINAL)
+    return '<div class="tempbox" id="tempbox">' +
+      '<div class="row"><span style="font-size:13px;color:var(--slate)">Temperature</span>' +
+      '<span class="val" id="tempval">23 °C</span></div>' +
+      '<input type="range" id="temp" min="20" max="38" step="1" value="23" ' +
+      'aria-label="Growth temperature in degrees Celsius">' +
+      '<div class="regimes" id="regimes"></div></div>';
+  }
+
+  function composeGeneMarkup() {
+    // VIEW: one labelled dropdown per gene, grouped by where it acts (TERMINAL)
+    let s = '';
+    GENE_GROUPS.forEach(function (grp) {
+      s += '<div class="cgroup"><h3>' + grp.title + '</h3>';
+      grp.genes.forEach(function (gene) {
+        s += '<div class="gene" data-gene="' + gene + '"><label for="sel-' + gene + '">' + gene + '</label>' +
+          '<select id="sel-' + gene + '" data-gene="' + gene + '">';
+        GENES[gene].forEach(function (allele) {
+          s += '<option value="' + allele + '">' + allele + '</option>';
+        });
+        s += '</select></div>';
+      });
+      s += '</div>';
+    });
+    return s;
+  }
+
+  function wireControlEvents(host) {
+    // CONTROLLER: attach handlers, then draw once
+    host.querySelectorAll('select[data-gene]').forEach(function (sel) {
+      sel.addEventListener('change', function () {
+        SELECTION[sel.dataset.gene] = sel.value;
+        refreshPrediction();
+      });
+    });
+    host.querySelector('#temp').addEventListener('input', function (e) {
+      TEMP = Number(e.target.value);
+      refreshPrediction();
+    });
+    host.querySelector('#preset').addEventListener('change', function (e) {
+      if (e.target.value === '') { return; }
+      applyPreset(PRESETS[Number(e.target.value)]);
+    });
+    host.querySelector('#reset').addEventListener('click', function () {
+      Object.keys(GENES).forEach(function (g) { SELECTION[g] = GENES[g][0]; });
+      syncControlsToSelection();
+      refreshPrediction();
+    });
+    refreshPrediction();
+  }
+}
+
+/* ==========================================================================
+   BASE CONTROLLER 2: apply a preset genotype
+   ========================================================================== */
+
+function applyPreset(preset) {
+  Object.keys(GENES).forEach(function (g) { SELECTION[g] = GENES[g][0]; });
+  Object.keys(preset.set).forEach(function (g) { SELECTION[g] = preset.set[g]; });
+  TEMP = preset.temp;
+  syncControlsToSelection();
+  refreshPrediction();
+}
+
+/* ==========================================================================
+   BASE CONTROLLER 3: resolve, traverse, render
+   ========================================================================== */
+
+function refreshPrediction() {
+  const genotype = readGenotype();
+  const state = resolveState(genotype, TEMP);
+  const trace = traverseTree(state);
+  const record = matchScholarship(genotype, TEMP);
+
+  renderFigure(trace);
+  renderPanel(genotype, state, trace, record);
+  renderHeader(genotype, state, trace);
+  refreshTemperatureReadout(genotype, state);
+}
+
+/* ==========================================================================
+   SHARED: read the dropdowns
+   ========================================================================== */
+
+function readGenotype() {
+  // MODEL: the non-wild-type alleles currently selected (TERMINAL)
+  const alleles = [];
+  const byGene = {};
+  Object.keys(GENES).forEach(function (gene) {
+    const chosen = SELECTION[gene];
+    byGene[gene] = chosen;
+    if (chosen !== GENES[gene][0]) { alleles.push(chosen); }
+  });
+  return { alleles:alleles, byGene:byGene, present:function (gene) { return byGene[gene] === GENES[gene][0]; } };
+}
+
+function syncControlsToSelection() {
+  // VIEW: push SELECTION and TEMP back into the widgets (TERMINAL)
+  Object.keys(GENES).forEach(function (gene) {
+    const sel = document.getElementById('sel-' + gene);
+    if (sel) { sel.value = SELECTION[gene]; }
+  });
+  const t = document.getElementById('temp');
+  if (t) { t.value = String(TEMP); }
+}
+
+/* ==========================================================================
+   SHARED: state resolution (phase one)
+   Every variable is resolved before the tree is walked, so an answer low in
+   the tree can depend on an allele that also acts high in it.
+   ========================================================================== */
+
+function resolveState(genotype, temp) {
+  const state = {
+    temp:temp, genotype:genotype,
+    arbitration:[], contested:[], consumed:{}, effectsByAllele:{}
+  };
+
+  const effects = collectActiveEffects(genotype, temp, state);
+
+  resolveTract(effects, state);
+  resolveCap(effects, state);
+  resolveNucleases(effects, state);
+  resolveDepth(state);
+  resolveAmplification(state);
+  resolveSsdna(effects, state);
+  resolveGeneRequirements(genotype, state);
+  resolveExits(effects, genotype, state);
+
+  return state;
+
+  // === SUB-CONTROLLERS ===
+
+  function collectActiveEffects(genotype, temp, state) {
+    // MODEL: expand each selected allele into the effects live at this temperature (TERMINAL)
+    const live = [];
+    genotype.alleles.forEach(function (allele) {
+      const entry = ALLELES[allele];
+      if (!entry) { return; }
+      state.effectsByAllele[allele] = [];
+      entry.effects.forEach(function (eff) {
+        const lo = (eff.tMin === undefined) ? -99 : eff.tMin;
+        const hi = (eff.tMax === undefined) ? 99 : eff.tMax;
+        if (temp < lo || temp >= hi) { return; }
+        const inst = Object.assign({}, eff, { allele:allele });
+        state.effectsByAllele[allele].push(inst);
+        live.push(inst);
+      });
+    });
+    return live;
+  }
+
+  function resolveTract(effects, state) {
+    // SUB-CONTROLLER: pick one tract state from competing alleles
+    const claims = effects.filter(function (e) { return e.kind === 'tract'; });
+    state.tract = 'full';
+    state.tractDrivers = [];
+    if (!claims.length) { return; }
+
+    let best = 'full';
+    claims.forEach(function (c) {
+      if (RULES.tractRank[c.value] > RULES.tractRank[best]) { best = c.value; }
+    });
+    state.tract = best;
+    state.tractDrivers = claims.filter(function (c) { return c.value === best; });
+
+    const losers = claims.filter(function (c) { return c.value !== best; });
+    if (losers.length) {
+      state.arbitration.push({
+        node:'q1', rule:'eroding outranks short, short outranks full',
+        won:state.tractDrivers.map(nameOf).join(', '), lost:losers.map(nameOf).join(', ') });
+    }
+  }
+
+  function resolveCap(effects, state) {
+    // SUB-CONTROLLER: cap occupancy, lesion identity and severity
+    const capEffects = effects.filter(function (e) { return e.kind === 'cap'; });
+    state.capFailures = capEffects;
+    state.cstSeverity = 'none';
+    state.kuLost = false;
+    state.rap1Lost = (state.tract === 'eroding');
+
+    capEffects.forEach(function (e) {
+      if (e.target === 'cst') {
+        if (e.severity === 'full' || state.cstSeverity === 'none') { state.cstSeverity = e.severity; }
+        if (e.severity === 'full') { state.cstSeverity = 'full'; }
+      }
+      if (e.target === 'ku') { state.kuLost = true; }
+    });
+
+    state.lesion = pickLesion(state);
+    state.capDrivers = capEffects.filter(function (e) {
+      return (state.lesion === 'cst' && e.target === 'cst') || (state.lesion === 'ku' && e.target === 'ku');
+    });
+    if (state.lesion === 'cst' && state.kuLost) {
+      state.arbitration.push({
+        node:'q7', rule:'the deeper lesion sets the amplification answer',
+        won:'CST failure', lost:'Ku loss', note:CONTESTED_NOTES.amplification });
+      state.contested.push(CONTESTED_NOTES.amplification);
+    }
+
+    function pickLesion(state) {
+      // MODEL: one lesion identity, by declared precedence (TERMINAL)
+      if (state.cstSeverity !== 'none') { return 'cst'; }
+      if (state.kuLost) { return 'ku'; }
+      if (state.rap1Lost) { return 'erosion'; }
+      return 'none';
+    }
+  }
+
+  function resolveNucleases(effects, state) {
+    // SUB-CONTROLLER: which long-range pathways survive at this end
+    const available = RULES.nucleasesByLesion[state.lesion].slice();
+    const removals = effects.filter(function (e) { return e.kind === 'nuclease'; });
+    const removed = [];
+    removals.forEach(function (e) {
+      const at = available.indexOf(e.target);
+      if (at >= 0) { available.splice(at, 1); removed.push(e); }
+    });
+    state.nucleases = available;
+    state.nucleasesRemoved = removed;
+    state.nucleaseStatus = available.length === 0 ? 'none'
+      : (removed.length ? 'partial' : 'full');
+  }
+
+  function resolveDepth(state) {
+    // MODEL: CST loss is the dominant term for depth (TERMINAL)
+    if (state.lesion === 'none' || state.nucleases.length === 0) { state.depth = 'none'; return; }
+    state.depth = (state.cstSeverity === 'full') ? 'kilobase' : 'intermediate';
+  }
+
+  function resolveAmplification(state) {
+    // MODEL: only a CST protein failure amplifies through the clamp (TERMINAL)
+    state.amplified = (state.lesion === 'cst');
+  }
+
+  function resolveSsdna(effects, state) {
+    // SUB-CONTROLLER: ordinal ssDNA level, thresholded at q5
+    let level = RULES.ssdnaBase[state.depth] + RULES.ssdnaLesion[state.lesion];
+    const terms = [{ label:state.depth + ' depth at ' + lesionPhrase(state.lesion), value:level }];
+
+    effects.filter(function (e) { return e.kind === 'ssdna'; }).forEach(function (e) {
+      if (!predicateHolds(e.when, state)) { return; }
+      level += e.delta;
+      terms.push({ label:e.allele, value:e.delta, effect:e });
+    });
+
+    state.ssdna = level;
+    state.ssdnaTerms = terms;
+    state.ssdnaSignals = level >= RULES.ssdnaThreshold;
+    state.ssdnaDrivers = terms.filter(function (t) { return t.effect; }).map(function (t) { return t.effect; });
+
+    function predicateHolds(when, state) {
+      // MODEL: evaluate an effect's gate against the state built so far (TERMINAL)
+      if (!when) { return true; }
+      if (when === 'amplified') { return state.amplified; }
+      if (when === 'nuclease:partial') { return state.nucleaseStatus === 'partial'; }
+      if (when.indexOf('lesion:') === 0) { return state.lesion === when.slice(7); }
+      return true;
+    }
+  }
+
+  function resolveGeneRequirements(genotype, state) {
+    // SUB-CONTROLLER: the four all-or-nothing requirement sets
+    state.cascade = evaluateSet(RULES.cascadeRequires, 'cascade');
+    state.clampLoaded = evaluateSet(RULES.clampRequires, 'clampLoaded');
+    state.repressors = evaluateSet(RULES.repressionRequires, 'repressors');
+    state.machinery = evaluateSet(RULES.machineryRequires, 'machinery');
+
+    if (!state.cascade.intact) {
+      const effectorOnly = state.cascade.missing.every(function (m) { return m.contested; });
+      if (effectorOnly) { state.contested.push(CONTESTED_NOTES.cascadeEffector); }
+    }
+
+    function evaluateSet(spec, label) {
+      // MODEL: which named members of a requirement set are absent (TERMINAL)
+      const missing = [];
+      spec.forEach(function (req) {
+        if (!genotype.present(req.gene)) {
+          missing.push({ name:req.name, allele:genotype.byGene[req.gene], contested:!!req.contested, inferred:!!req.inferred });
+        }
+      });
+      return { intact:missing.length === 0, missing:missing, label:label };
+    }
+  }
+
+  function resolveExits(effects, genotype, state) {
+    // SUB-CONTROLLER: which exits from arrest are open
+    state.exits = { recombination:true, adaptation:true, favourRecombination:false };
+    state.exitDrivers = [];
+    effects.filter(function (e) { return e.kind === 'exit'; }).forEach(function (e) {
+      if (e.open === false) { state.exits[e.target] = false; state.exitDrivers.push(e); }
+      if (e.favour) { state.exits.favourRecombination = true; state.exitDrivers.push(e); }
+    });
+    // Recombination needs an eroding tract to act on, whatever the genotype.
+    state.recombinationSubstrate = (state.tract === 'eroding');
+  }
+
+  function nameOf(effect) { return effect.allele; }
+}
+
+function lesionWord(lesion) {
+  // MODEL: prose name for a lesion identity (TERMINAL)
+  if (lesion === 'cst') { return 'CST-failed'; }
+  if (lesion === 'ku') { return 'Ku-less'; }
+  if (lesion === 'erosion') { return 'eroded'; }
+  return 'capped';
+}
+
+function lesionPhrase(lesion) {
+  // MODEL: lesion word with the right indefinite article (TERMINAL)
+  const w = lesionWord(lesion);
+  return ('aeiou'.indexOf(w[0].toLowerCase()) >= 0 ? 'an ' : 'a ') + w + ' end';
+}
+
+/* ==========================================================================
+   SHARED: tree traversal (phase two)
+   The walk reads state. It never recomputes biology.
+   ========================================================================== */
+
+function traverseTree(state) {
+  const trace = { nodes:[], edges:{}, weights:{}, steps:[], out:[], usedAlleles:{} };
+
+  walkFromTract(state, trace);
+  markProliferationContainer(trace);
+  collectUnusedAlleles(state, trace);
+
+  return trace;
+
+  // === SUB-CONTROLLERS ===
+
+  function walkFromTract(state, trace) {
+    // SUB-CONTROLLER: q1 through the terminal fates
+    stepTract(state, trace);
+    stepCap(state, trace);
+  }
+
+  function stepTract(state, trace) {
+    const map = { full:{ edge:'t1', node:'sfull', link:'m1' },
+                  short:{ edge:'t2', node:'sstable', link:'m2' },
+                  eroding:{ edge:'t3', node:'serode', link:'m3' } };
+    const pick = map[state.tract];
+    pushStep(trace, 'q1', pick.edge, state.tractDrivers, describeTract(state));
+    trace.nodes.push(pick.node);
+    trace.edges[pick.link] = '';
+  }
+
+  function stepCap(state, trace) {
+    if (state.lesion === 'none') {
+      if (state.tract === 'short') {
+        pushStep(trace, 'q2', 'a2', [], 'Yes, on a short tract. There is no resection lesion, but the end is now a joining substrate.');
+        stepDuplex(state, trace);
+      } else {
+        pushStep(trace, 'q2', 'a1', [], 'Yes. The overhang is held and the duplex tract is loaded, so nothing is presented to a nuclease or a sensor.');
+        trace.weights.a1 = 'primary';
+        finish(trace, 'subnorm');
+      }
+      return;
+    }
+    pushStep(trace, 'q2', 'a3', state.capDrivers, describeCap(state));
+    stepNuclease(state, trace);
+  }
+
+  function stepNuclease(state, trace) {
+    if (state.nucleases.length === 0) {
+      if (state.tract === 'eroding') {
+        pushStep(trace, 'q3', 'b2', state.nucleasesRemoved,
+          'No, but the tract is eroding, so this is not a stable end.');
+        trace.weights.b2 = 'primary';
+        stepResolution(state, trace, false);
+      } else {
+        pushStep(trace, 'q3', 'b1', state.nucleasesRemoved, describeNucleaseLoss(state));
+        trace.weights.b1 = 'primary';
+        finish(trace, 'submaint');
+      }
+      return;
+    }
+    pushStep(trace, 'q3', 'b3', state.nucleasesRemoved, describeNucleaseActive(state));
+    stepDepth(state, trace);
+  }
+
+  function stepDepth(state, trace) {
+    if (state.depth === 'kilobase') {
+      pushStep(trace, 'q4', 'c2', state.capDrivers,
+        'Kilobase. CST is fully lost, so the reaction runs into subtelomeric X and unique sequence.');
+      trace.nodes.push('tkb');
+      trace.edges.d2 = '';
+    } else {
+      pushStep(trace, 'q4', 'c1', state.capDrivers,
+        'Intermediate. CST still holds or partly holds the terminus, so the reaction stays inside the telomeric and subtelomeric tract.');
+      trace.nodes.push('tint');
+      trace.edges.d1 = '';
+    }
+    stepSsdna(state, trace);
+  }
+
+  function stepSsdna(state, trace) {
+    if (!state.ssdnaSignals) {
+      pushStep(trace, 'q5', 'e1', state.ssdnaDrivers, describeSsdna(state));
+      stepDuplex(state, trace);
+      return;
+    }
+    pushStep(trace, 'q5', 'e2', state.ssdnaDrivers, describeSsdna(state));
+    stepCascade(state, trace);
+  }
+
+  function stepCascade(state, trace) {
+    if (!state.cascade.intact) {
+      pushStep(trace, 'q6', 'f1', missingAsDrivers(state.cascade),
+        'No. ' + listMissing(state.cascade) + ' absent, so nothing pauses and the cell keeps cycling while the lesion sits there.');
+      stepDuplex(state, trace);
+      return;
+    }
+    pushStep(trace, 'q6', 'f2', [], 'Yes, so the cell arrests and the end keeps degrading while it waits.');
+    stepAmplification(state, trace);
+  }
+
+  function stepAmplification(state, trace) {
+    if (!state.amplified) {
+      pushStep(trace, 'q7', 'g2', [],
+        'No. CST is bound at this end, so Rad24 and 9-1-1 are not amplifying the lesion and the clamp question is skipped.');
+      trace.nodes.push('arr');
+      stepResolution(state, trace, true);
+      return;
+    }
+    pushStep(trace, 'q7', 'g1', state.capDrivers,
+      'Yes. Rad24 and 9-1-1 raise both resection and Mec1 output at a CST-failed end.');
+    stepClamp(state, trace);
+  }
+
+  function stepClamp(state, trace) {
+    if (!state.clampLoaded.intact) {
+      pushStep(trace, 'q8', 'h1', missingAsDrivers(state.clampLoaded),
+        'No. ' + listMissing(state.clampLoaded) + ' absent, so the clamp never loads and the amplified signal is not raised.');
+      stepDuplex(state, trace);
+      return;
+    }
+    pushStep(trace, 'q8', 'h2', [], 'Yes.');
+    trace.nodes.push('arr');
+    stepResolution(state, trace, true);
+  }
+
+  function stepResolution(state, trace, arrested) {
+    if (arrested) { trace.edges.i1 = ''; }
+    const open = openExits(state, arrested);
+    pushStep(trace, 'qR', null, state.exitDrivers, describeResolution(state, open, arrested));
+    trace.nodes.push('qR');
+    assignOutcomes(open, trace);
+
+    function openExits(state, arrested) {
+      // MODEL: which of the three exits carry cells here (TERMINAL)
+      const list = [];
+      if (state.exits.recombination && state.recombinationSubstrate) { list.push('rB'); }
+      if (arrested && state.exits.adaptation) { list.push('rA'); }
+      list.push('rC');
+      return list;
+    }
+
+    function assignOutcomes(open, trace) {
+      // MODEL: rank the open exits and emit fates (TERMINAL)
+      const spec = {
+        rB:{ node:'subrec', label:'proliferating', tone:'live', setpoint:'recombination-maintained' },
+        rA:{ node:'gl', label:'death by gene loss', tone:'death', setpoint:'' },
+        rC:{ node:'arrdeath', label:'death in arrest', tone:'death', setpoint:'' }
+      };
+      let order = open.slice();
+      if (open.indexOf('rB') >= 0 && state.exits.favourRecombination) {
+        order = ['rB'].concat(open.filter(function (e) { return e !== 'rB'; }));
+      } else if (open.indexOf('rA') >= 0) {
+        order = ['rA'].concat(open.filter(function (e) { return e !== 'rA'; }));
+      }
+      const ranks = { rB:'rare survivors', rA:'cells that adapt', rC:'the remainder' };
+      if (order.length === 1) { ranks[order[0]] = ''; }
+      if (order[0] === 'rB') { ranks.rB = 'reported outcome'; }
+      order.forEach(function (id, idx) {
+        trace.edges[id] = (id === 'rC' && !state.exits.recombination) ? 'rad52' + D : '';
+        trace.weights[id] = idx === 0 ? 'primary' : 'secondary';
+        trace.nodes.push(spec[id].node);
+        trace.out.push({ label:spec[id].label, tone:spec[id].tone, setpoint:spec[id].setpoint, rank:ranks[id] });
+      });
+    }
+  }
+
+  function stepDuplex(state, trace) {
+    trace.nodes.push('qD');
+    if (state.depth === 'kilobase') {
+      pushStep(trace, 'qD', 'n1', [], 'No. Kilobase resection has removed it.');
+      trace.weights.n1 = 'primary';
+      finish(trace, 'gl');
+      trace.out.push({ label:'death by gene loss', tone:'death', setpoint:'', rank:'' });
+      return;
+    }
+    const reason = state.depth === 'none'
+      ? 'Yes. Nothing was resected.'
+      : 'Yes. Intermediate depth leaves template for C strand fill-in.';
+    pushStep(trace, 'qD', 'n2', [], reason);
+    stepRepression(state, trace);
+  }
+
+  function stepRepression(state, trace) {
+    trace.nodes.push('qE');
+    const tested = (state.tract !== 'full');
+    if (tested && !state.repressors.intact) {
+      state.contested.push(CONTESTED_NOTES.repressionShort);
+      pushStep(trace, 'qE', 'p2', missingAsDrivers(state.repressors),
+        'No. ' + listMissing(state.repressors) + ' absent over an already short array, so the second layer of repression is gone.');
+      stepMachinery(state, trace);
+      return;
+    }
+    if (state.lesion === 'none') {
+      pushStep(trace, 'qE', 'p1', [], 'Yes, and the end is capped. Rap1 load carries repression at this setpoint.');
+      trace.weights.p1 = 'primary';
+      finish(trace, 'subshort');
+      trace.out.push({ label:'proliferating', tone:'live', setpoint:'short setpoint', rank:'' });
+      return;
+    }
+    const why = state.tract === 'full'
+      ? 'Rap1 load is normal on a full-length tract.'
+      : 'Mec1 and the 9-1-1 genes are intact.';
+    pushStep(trace, 'qE', 'p3', [], 'Yes, and the end is uncapped. ' + why);
+    trace.weights.p3 = 'primary';
+    finish(trace, 'subunsig');
+    trace.out.push({ label:'proliferating', tone:'live', setpoint:'unsignalled lesion', rank:'' });
+  }
+
+  function stepMachinery(state, trace) {
+    trace.nodes.push('qF');
+    if (!state.machinery.intact) {
+      pushStep(trace, 'qF', 's1', missingAsDrivers(state.machinery),
+        'No. ' + listMissing(state.machinery) + ' required at the joint and absent, so no fusion forms.');
+      trace.weights.s1 = 'primary';
+      finish(trace, 'subshort');
+      trace.out.push({ label:'proliferating', tone:'live', setpoint:'short setpoint', rank:'' });
+      return;
+    }
+    pushStep(trace, 'qF', 's2', [], 'Yes. Ku, Lig4 and Lif1 are all present.');
+    trace.weights.s2 = 'primary';
+    finish(trace, 'fus');
+    trace.out.push({ label:'death by fusion', tone:'death', setpoint:'', rank:'' });
+  }
+
+  function finish(trace, fateNode) {
+    trace.nodes.push(fateNode);
+    if (fateNode === 'subnorm') {
+      trace.out.push({ label:'proliferating', tone:'live', setpoint:'normal setpoint', rank:'' });
+    }
+    if (fateNode === 'submaint') {
+      trace.out.push({ label:'proliferating', tone:'live', setpoint:'tract still maintained', rank:'' });
+    }
+  }
+
+  function markProliferationContainer(trace) {
+    // MODEL: light the proliferating box when any live fate is reached (TERMINAL)
+    const live = ['subnorm','submaint','subrec','subshort','subunsig'];
+    if (trace.nodes.some(function (n) { return live.indexOf(n) >= 0; })) { trace.nodes.push('prolif'); }
+  }
+
+  function collectUnusedAlleles(state, trace) {
+    // MODEL: alleles carried but never consulted by this trace (TERMINAL)
+    trace.unused = state.genotype.alleles.filter(function (a) { return !trace.usedAlleles[a]; });
+  }
+
+  function pushStep(trace, nodeId, edgeId, drivers, answer) {
+    trace.nodes.push(nodeId);
+    if (edgeId) {
+      trace.edges[edgeId] = drivers.map(function (d) { return d.allele; }).filter(unique).join(', ');
+    }
+    (drivers || []).forEach(function (d) { if (d.allele) { trace.usedAlleles[d.allele] = true; } });
+    trace.steps.push({ node:nodeId, edge:edgeId, answer:answer, drivers:drivers || [] });
+  }
+
+  function unique(v, i, arr) { return arr.indexOf(v) === i; }
+
+  function missingAsDrivers(set) {
+    // MODEL: turn missing requirement members into citable drivers (TERMINAL)
+    return set.missing.map(function (m) {
+      const effects = (ALLELES[m.allele] || { effects:[] }).effects;
+      const match = effects.filter(function (e) {
+        return e.target === m.name || (e.kind === 'machinery' && e.target === m.name);
+      })[0];
+      return { allele:m.allele, cite:(match && match.cite) || X, why:m.inferred ? 'placed on this list by inference' : null, contested:m.contested };
+    }).filter(function (d, i, arr) {
+      return arr.findIndex(function (o) { return o.allele === d.allele; }) === i;
+    });
+  }
+
+  function listMissing(set) {
+    const names = set.missing.map(function (m) { return m.name; }).filter(function (v, i, a) { return a.indexOf(v) === i; });
+    return names.join(' and ') + (names.length > 1 ? ' are' : ' is');
+  }
+}
+
+/* ==========================================================================
+   SHARED: answer prose for the state-derived branches
+   ========================================================================== */
+
+function describeTract(state) {
+  if (state.tract === 'full') {
+    return 'Yes, at full length. Telomerase acts on the shortest ends and Ku and Rap1 set the ceiling.';
+  }
+  if (state.tract === 'short') {
+    return 'Yes, at a lower setpoint. ' + reasonList(state.tractDrivers) + '.';
+  }
+  return 'No. ' + reasonList(state.tractDrivers) + '.';
+}
+
+function describeCap(state) {
+  if (state.capDrivers.length) {
+    const sev = state.cstSeverity === 'partial' && state.lesion === 'cst'
+      ? ' A productive cap fails on some fraction of ends at this temperature.' : '';
+    return 'No. ' + state.capDrivers.map(alleleEm).join(' and ') + ' fails here.' + sev;
+  }
+  return 'No. Cdc13 is present and binding, but Rap1 has come off the shortened array.';
+}
+
+function describeNucleaseActive(state) {
+  const removed = state.nucleasesRemoved.map(function (e) { return e.target; });
+  const base = 'Yes. ' + state.nucleases.join(' and ') + ' act' + (state.nucleases.length > 1 ? '' : 's') +
+    ' at ' + lesionPhrase(state.lesion) + '.';
+  if (!removed.length) { return base; }
+  return base + ' ' + removed.join(' and ') + ' ' + (removed.length > 1 ? 'are' : 'is') + ' gone, and the remaining pathway still cuts.';
+}
+
+function describeNucleaseLoss(state) {
+  const removed = state.nucleasesRemoved.map(function (e) { return e.target; });
+  return 'No. ' + removed.join(' and ') + ' ' + (removed.length > 1 ? 'are' : 'is') +
+    ' the only long-range pathway available at ' + lesionPhrase(state.lesion) +
+    ', so nothing runs down and nothing chews in.';
+}
+
+function describeSsdna(state) {
+  const verdict = state.ssdnaSignals ? 'Yes' : 'No';
+  const rel = state.ssdnaSignals ? 'at or above' : 'below';
+  return verdict + '. Level ' + state.ssdna + ' sits ' + rel + ' the signalling threshold of ' +
+    RULES.ssdnaThreshold + '. ' + ssdnaBreakdown(state);
+}
+
+function ssdnaBreakdown(state) {
+  // MODEL: show the ordinal arithmetic rather than assert the answer (TERMINAL)
+  return state.ssdnaTerms.map(function (t, i) {
+    if (i === 0) { return t.label + ' sets ' + t.value; }
+    return t.label + ' ' + (t.value >= 0 ? 'adds ' + t.value : 'takes ' + (-t.value));
+  }).join(', ') + '.';
+}
+
+function describeResolution(state, open, arrested) {
+  const parts = [];
+  if (open.indexOf('rB') >= 0) {
+    parts.push('Recombination is available, since Rad52 is present and the tract is eroding' +
+      (state.exits.favourRecombination ? ' and an inhibitor of recombination at ends has been removed' : ''));
+  } else if (!state.exits.recombination) {
+    parts.push('Recombination is closed, since Rad52 is absent');
+  } else {
+    parts.push('Recombination has nothing to act on, since the tract is not eroding');
+  }
+  if (open.indexOf('rA') >= 0) {
+    parts.push('adaptation carries most cells into division with the end still uncapped');
+  } else if (!arrested) {
+    parts.push('adaptation is not available, since the cell never arrested');
+  } else {
+    parts.push('adaptation is closed');
+  }
+  parts.push('the remainder never divide again');
+  return parts.map(function (t, i) {
+    return i === 0 ? t : t.charAt(0).toUpperCase() + t.slice(1);
+  }).join('. ') + '.';
+}
+
+function reasonList(drivers) {
+  if (!drivers.length) { return 'maintenance is unperturbed'; }
+  return drivers.map(function (d) {
+    return alleleEm(d) + (d.why ? ': ' + d.why : '');
+  }).join('. ');
+}
+
+function alleleEm(d) { return '<em>' + d.allele + '</em>'; }
+
+/* ==========================================================================
+   SHARED: scholarship lookup
+   ========================================================================== */
+
+function matchScholarship(genotype, temp) {
+  // MODEL: exact allele-set match inside a temperature window (TERMINAL)
+  const have = genotype.alleles.slice().sort().join('|');
+  for (let i = 0; i < SCHOLARSHIP.length; i++) {
+    const rec = SCHOLARSHIP[i];
+    if (temp < rec.tMin || temp >= rec.tMax) { continue; }
+    for (let j = 0; j < rec.sets.length; j++) {
+      if (rec.sets[j].slice().sort().join('|') === have) { return rec; }
+    }
+  }
+  return null;
+}
+
+/* ==========================================================================
+   SHARED: SVG rendering
+   ========================================================================== */
+
+function svgTree(trace) {
+  const nodeOn = new Set(trace.nodes);
+  const edgeMap = trace.edges;
+  const wMap = trace.weights || {};
+  let s = '<svg viewBox="0 0 780 1700" role="img" class="traced">';
+  s += '<title>Decision tree for chromosome end fate</title>';
+  s += '<desc>Questions on tract maintenance, cap occupancy, resection nucleases, resection depth, checkpoint signalling, restoration after arrest, and the terminal joining reaction, ending in proliferation, gene loss or fusion.</desc>';
+  s += '<defs><marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">';
+  s += '<path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>';
+
+  NODES.filter(function (n) { return n.k === 'group'; }).forEach(function (c) {
+    const lit = c.mem.some(function (m) { return nodeOn.has(m); });
+    s += '<g class="node group' + (lit ? ' on' : '') + '">';
+    s += '<rect class="n-box" x="' + c.x + '" y="' + c.y + '" width="' + c.w + '" height="' + c.h + '" rx="14"/>';
+    s += '<text class="g-label" x="' + c.lxx + '" y="' + c.lyy + '" dominant-baseline="central">' + c.label + '</text></g>';
+  });
+
+  NODES.filter(function (n) { return n.k === 'container'; }).forEach(function (c) {
+    s += '<g class="node container' + (c.frame ? ' frame' : '') + (nodeOn.has(c.id) ? ' on' : '') + '">';
+    s += '<rect class="n-box" x="' + c.x + '" y="' + c.y + '" width="' + c.w + '" height="' + c.h + '" rx="16"/>';
+    s += '<text class="n-title" x="' + c.lxx + '" y="' + c.lyy + '" dominant-baseline="central">' + c.label + '</text></g>';
+  });
+
+  EDGES.forEach(function (e) {
+    const active = Object.prototype.hasOwnProperty.call(edgeMap, e.id);
+    const w = active && wMap[e.id] ? ' w-' + wMap[e.id] : '';
+    s += '<g class="edgegroup' + (active ? ' on' : '') + w + '">';
+    s += '<path class="edge" d="' + e.d + '" marker-end="url(#ar)"/>';
+    if (e.l) {
+      s += '<text class="e-label" x="' + e.lx + '" y="' + e.ly + '" text-anchor="' + (e.la === 'start' ? 'start' : 'middle') + '" dominant-baseline="central">' + e.l + '</text>';
+    }
+    if (active && edgeMap[e.id]) {
+      s += '<text class="e-allele" x="' + (e.ax !== undefined ? e.ax : e.lx) + '" y="' + (e.ay !== undefined ? e.ay : e.ly + 15) + '" text-anchor="' + (e.aa || 'middle') + '" dominant-baseline="central">' + edgeMap[e.id] + '</text>';
+    }
+    s += '</g>';
+  });
+
+  NODES.filter(function (n) { return n.k !== 'container' && n.k !== 'group'; }).forEach(function (n) {
+    const cx = n.x + n.w / 2;
+    const cy = n.h > 100 ? n.y + 44 : n.y;
+    s += '<g class="node n-' + n.k + (nodeOn.has(n.id) ? ' on' : '') + '">';
+    s += '<rect class="n-box" x="' + n.x + '" y="' + n.y + '" width="' + n.w + '" height="' + n.h + '" rx="7"/>';
+    s += '<text class="n-title" x="' + cx + '" y="' + (cy + 22) + '" text-anchor="middle" dominant-baseline="central">' + n.t + '</text>';
+    s += '<text class="n-sub" x="' + cx + '" y="' + (cy + 43) + '" text-anchor="middle" dominant-baseline="central">' + n.s + '</text>';
+    s += '</g>';
+  });
+  return s + '</svg>';
+}
+
+function renderFigure(trace) {
+  // VIEW: paint the traced tree (TERMINAL)
+  document.getElementById('figure').innerHTML = svgTree(trace);
+}
+
+/* ==========================================================================
+   SHARED: panel rendering
+   ========================================================================== */
+
+function renderPanel(genotype, state, trace, record) {
+  const cut = measurementCut(record, trace);
+  let html = composeTrace(trace, cut);
+  html += composeVerdicts(trace, cut);
+  html += composeEvidence(record);
+  html += composeAudit(state, trace);
+  document.getElementById('panel').innerHTML = html;
+
+  function measurementCut(record, trace) {
+    // MODEL: index of the last step the cited experiment reaches (TERMINAL)
+    if (!record) { return 0; }
+    const at = trace.steps.findIndex(function (st) { return st.node === record.through; });
+    return at < 0 ? trace.steps.length : at + 1;
+  }
+
+  function composeTrace(trace, cut) {
+    // VIEW: the question and answer ladder with per-branch citations (TERMINAL)
+    let s = '<ol class="trace">';
+    trace.steps.forEach(function (st, idx) {
+      const node = NODES.filter(function (n) { return n.id === st.node; })[0];
+      const cls = idx >= cut ? ' class="predicted"' : '';
+      s += '<li' + cls + '><div class="q">' + (node ? node.t : st.node) + '</div>';
+      s += '<div class="a">' + st.answer + '</div>';
+      if (st.drivers && st.drivers.length) {
+        st.drivers.forEach(function (d) {
+          const missing = (!d.cite || d.cite === X);
+          s += '<div class="drv"><i>' + d.allele + '</i> at this branch: ' +
+            '<span class="src' + (missing ? ' none' : '') + '">' + (d.cite || X) + '</span>' +
+            (d.contested ? ' (contested rule)' : '') + '</div>';
+        });
+      }
+      s += '</li>';
+      if (idx === cut - 1 && cut < trace.steps.length) {
+        s += '<li class="mark">measurement stops here</li>';
+      }
+    });
+    return s + '</ol>';
+  }
+
+  function composeVerdicts(trace, cut) {
+    // VIEW: the fate cards (TERMINAL)
+    const predicted = cut < trace.steps.length;
+    let s = '';
+    trace.out.forEach(function (o, idx) {
+      s += '<div class="verdict ' + o.tone + (idx > 0 ? ' secondary' : '') + (predicted ? ' predicted' : '') + '">';
+      if (o.rank) { s += '<div class="rank">' + o.rank + '</div>'; }
+      s += '<div class="label">' + o.label + '</div>';
+      if (o.setpoint) { s += '<div class="setpoint">' + o.setpoint + '</div>'; }
+      if (predicted) { s += '<div class="basis">predicted, past the reported endpoint</div>'; }
+      s += '</div>';
+    });
+    return s;
+  }
+
+  function composeEvidence(record) {
+    // VIEW: whole-genotype scholarship, or nothing at all (TERMINAL)
+    if (!record) {
+      return '<div class="nodata">No published record matches this genotype at this temperature. ' +
+        'Every step above rests on its own branch citation, and the fate is a prediction of the model.</div>';
+    }
+    let s = '<div class="box evidence"><h4>Reported for this genotype</h4>';
+    s += '<div class="reported"><span>' + record.reported + '</span></div>';
+    if (record.cite) {
+      s += '<div class="cite' + (record.cite === X ? ' missing' : '') + '">Citation: <span>' + record.cite + '</span></div>';
+    }
+    if (record.caveat) { s += '<div class="caveat">' + record.caveat + '</div>'; }
+    if (record.test) { s += '<div class="test"><b>Would falsify:</b> ' + record.test + '</div>'; }
+    return s + '</div>';
+  }
+
+  function composeAudit(state, trace) {
+    // VIEW: arbitration and unused alleles (TERMINAL)
+    let s = '';
+    const notes = state.contested.filter(function (v, i, a) { return a.indexOf(v) === i; });
+    if (state.arbitration.length || notes.length) {
+      s += '<div class="box contested"><h4>Where the model arbitrated</h4>';
+      state.arbitration.forEach(function (a) {
+        s += '<p><b>' + a.node + ':</b> ' + a.rule + '. ' + a.won + ' scored over ' + a.lost + '.</p>';
+      });
+      notes.forEach(function (n) { s += '<p>' + n + '</p>'; });
+      s += '</div>';
+    }
+    if (trace.unused && trace.unused.length) {
+      s += '<div class="box silent"><h4>Carried but never tested</h4><p>' +
+        trace.unused.map(function (a) { return '<i>' + a + '</i>'; }).join(', ') +
+        ' sit' + (trace.unused.length > 1 ? '' : 's') + ' in the genotype, but this trace never reaches a branch that reads ' +
+        (trace.unused.length > 1 ? 'them' : 'it') + '. Any phenotype attributed to ' +
+        (trace.unused.length > 1 ? 'these alleles' : 'this allele') + ' here is outside the model.</p></div>';
+    }
+    return s;
+  }
+}
+
+/* ==========================================================================
+   SHARED: header and temperature readout
+   ========================================================================== */
+
+function renderHeader(genotype, state, trace) {
+  // VIEW: genotype signature and step count (TERMINAL)
+  const name = genotype.alleles.length ? genotype.alleles.join(' ') : 'wild type';
+  document.getElementById('sig').innerHTML = name;
+  document.getElementById('count').textContent =
+    trace.steps.length + ' question' + (trace.steps.length === 1 ? '' : 's') + ' asked, ' +
+    trace.out.length + ' fate' + (trace.out.length === 1 ? '' : 's');
+}
+
+function refreshTemperatureReadout(genotype, state) {
+  // VIEW: temperature value plus which alleles are conditional here (TERMINAL)
+  const val = document.getElementById('tempval');
+  const box = document.getElementById('tempbox');
+  const reg = document.getElementById('regimes');
+  if (!val) { return; }
+  val.textContent = TEMP + ' °C';
+
+  const conditional = genotype.alleles.filter(function (a) {
+    const entry = ALLELES[a];
+    if (!entry) { return false; }
+    return entry.effects.some(function (e) { return e.tMin !== undefined || e.tMax !== undefined; });
+  });
+
+  if (!conditional.length) {
+    box.classList.add('inert');
+    reg.innerHTML = 'No selected allele is conditional. Temperature does not change this prediction.';
+    return;
+  }
+  box.classList.remove('inert');
+  reg.innerHTML = conditional.map(function (a) {
+    const live = ALLELES[a].effects.filter(function (e) {
+      const lo = (e.tMin === undefined) ? -99 : e.tMin;
+      const hi = (e.tMax === undefined) ? 99 : e.tMax;
+      return TEMP >= lo && TEMP < hi && (e.tMin !== undefined || e.tMax !== undefined);
+    });
+    const words = live.map(function (e) {
+      if (e.kind === 'silent') { return 'permissive'; }
+      if (e.kind === 'cap') { return e.severity === 'full' ? 'cap fully lost' : 'cap partly lost'; }
+      if (e.kind === 'ssdna') { return 'ssDNA raised'; }
+      return e.kind;
+    });
+    return '<b>' + a + '</b>: ' + (words.length ? words.join(', ') : 'no conditional effect here');
+  }).join('<br>');
+}
+
+buildInterface();
+</script>

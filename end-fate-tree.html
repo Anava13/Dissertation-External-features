@@ -1,0 +1,760 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chromosome end fate: genotype traces</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400;1,6..72,500&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper:#F6F7F4; --card:#FFFFFF; --ink:#17201D; --slate:#6E7671;
+    --rule:#D8DCD4; --moss:#3E6B57; --red:#A62B1C; --red-soft:#F7E8E5;
+    --amber:#8A6412; --amber-soft:#F6EEDC; --teal-soft:#E4EEEF; --teal:#2F6068;
+  }
+  * { box-sizing:border-box; }
+  html, body { margin:0; padding:0; background:var(--paper); color:var(--ink);
+    font-family:Inter, system-ui, sans-serif; font-size:16px; line-height:1.6; }
+  .wrap { max-width:1280px; margin:0 auto; padding:24px 28px 64px; }
+  header.bar { display:flex; align-items:baseline; gap:20px; border-bottom:1px solid var(--rule);
+    padding-bottom:14px; margin-bottom:28px; flex-wrap:wrap; }
+  header.bar h1 { font-family:Newsreader, Georgia, serif; font-weight:500; font-size:20px; margin:0; }
+  .count { color:var(--slate); font-size:14px; margin-left:auto; font-variant-numeric:tabular-nums; }
+  .nav { display:flex; gap:8px; }
+  button.step { font:inherit; font-size:14px; padding:6px 14px; background:var(--card);
+    color:var(--ink); border:1px solid var(--rule); border-radius:6px; cursor:pointer; }
+  button.step:hover:not(:disabled) { border-color:var(--moss); color:var(--moss); }
+  button.step:disabled { opacity:.38; cursor:default; }
+  button.step:focus-visible { outline:2px solid var(--moss); outline-offset:2px; }
+
+  .slide { display:grid; grid-template-columns:minmax(320px,1fr) minmax(300px,400px); gap:40px; align-items:start; }
+  .slide.solo { grid-template-columns:1fr; }
+  .figure { display:flex; justify-content:center; }
+  .figure svg { width:100%; max-width:660px; height:auto; }
+  .slide.solo .figure svg { max-width:780px; }
+
+  .genotype { font-family:Newsreader, Georgia, serif; font-style:italic; font-size:29px;
+    line-height:1.25; font-weight:500; color:var(--red); margin:0 0 4px; }
+  .cond { font-family:Inter, sans-serif; font-style:normal; font-size:14px; color:var(--slate); }
+  .temp { font-family:Inter, sans-serif; font-style:normal; font-size:13px; color:var(--amber);
+    background:var(--amber-soft); border-radius:20px; padding:3px 11px; margin-left:12px; vertical-align:middle; }
+
+  ol.trace { list-style:none; margin:20px 0 24px; padding:0; }
+  ol.trace li { border-left:2px solid var(--moss); padding:0 0 14px 16px; }
+  ol.trace li.skipped { border-left-color:var(--rule); border-left-style:dashed; }
+  ol.trace li:last-child { padding-bottom:0; }
+  ol.trace li.inferred { border-left-color:#C3CABF; border-left-style:dotted; }
+  ol.trace li.inferred .a { color:var(--slate); }
+  ol.trace li.mark { border-left:none; padding:0 0 14px 18px; font-size:12px;
+    letter-spacing:.06em; text-transform:uppercase; color:var(--amber); }
+  .verdict.predicted { border-style:dotted; }
+  .verdict .basis { font-size:12px; color:var(--slate); margin-top:4px; }
+  .test { margin-top:12px; font-size:14px; color:var(--slate); border-left:2px solid var(--teal); padding-left:12px; }
+  .test b { color:var(--teal); font-weight:500; }
+  .q { font-size:14px; color:var(--slate); }
+  .a { font-size:15px; }
+  .a em { font-style:italic; color:var(--red); font-family:Newsreader, Georgia, serif; font-size:16px; }
+
+  .verdict { border:1px solid var(--rule); border-radius:10px; padding:14px 18px; background:var(--card); margin-bottom:10px; }
+  .verdict.secondary { border-style:dashed; }
+  .verdict .rank { font-size:12px; color:var(--slate); margin-bottom:2px; }
+  .verdict .label { font-family:Newsreader, Georgia, serif; font-size:21px; font-weight:500; }
+  .verdict .setpoint { font-size:14px; color:var(--slate); }
+  .verdict.death .label { color:var(--red); }
+  .verdict.live .label { color:var(--teal); }
+  .reported { font-size:14px; color:var(--slate); margin-top:14px; padding-top:10px; border-top:1px solid var(--rule); }
+  .cite { font-size:13px; color:var(--slate); margin-top:6px; }
+  .cite span { color:var(--ink); }
+  .cite.missing span { color:var(--red); }
+  .reported span { color:var(--ink); }
+  .caveat { margin-top:14px; font-size:14px; color:var(--slate); border-left:2px solid var(--amber); padding-left:12px; }
+
+  .intro { margin-bottom:26px; }
+  .intro p { max-width:68ch; margin:0 auto 14px; color:var(--slate); font-size:15px; }
+
+  text { font-family:Inter, system-ui, sans-serif; }
+  .n-title { font-size:13px; font-weight:500; fill:var(--ink); }
+  .n-sub { font-size:11.5px; fill:var(--slate); }
+  .e-label { font-size:11.5px; fill:var(--slate); }
+  .e-allele { font-size:12px; font-family:Newsreader, Georgia, serif; font-style:italic; fill:var(--red); }
+  .n-box { fill:var(--card); stroke:#C3CABF; stroke-width:1; }
+  .n-state .n-box { fill:#EEF1EC; }
+  .n-live .n-box { fill:var(--teal-soft); stroke:#B9CFD2; }
+  .n-hold .n-box { fill:var(--amber-soft); stroke:#DEC894; }
+  .n-death .n-box { fill:var(--red-soft); stroke:#E3B6AE; }
+  .container .n-box { fill:none; stroke:#B9CFD2; stroke-dasharray:5 4; }
+  .group .n-box { fill:none; stroke:#CDD3C9; stroke-dasharray:2 6; }
+  .g-label { font-size:11px; fill:#9AA39C; letter-spacing:.08em; text-transform:uppercase; }
+  .frame .n-box { stroke:#C7CEC6; stroke-dasharray:9 5; }
+  .edge { stroke:#B6BDB2; stroke-width:1.25; fill:none; }
+
+  svg.traced .node, svg.traced .edgegroup { opacity:.16; }
+  svg.traced .node.on, svg.traced .edgegroup.on { opacity:1; }
+  svg.traced .node.on .n-box { stroke:var(--moss); stroke-width:2; }
+  svg.traced .node.on.n-live .n-box { stroke:var(--teal); }
+  svg.traced .node.on.n-hold .n-box { stroke:var(--amber); }
+  svg.traced .node.on.n-death .n-box { stroke:var(--red); }
+  svg.traced .node.on.container .n-box { stroke:var(--teal); stroke-width:1.25; }
+  svg.traced .edgegroup.on .edge { stroke:var(--moss); stroke-width:2.25; }
+  svg.traced .edgegroup.on.w-primary .edge { stroke-width:4; }
+  svg.traced .edgegroup.on.w-secondary .edge { stroke-width:1.5; stroke-dasharray:6 4; }
+  svg.traced .edgegroup.on .e-label { fill:var(--moss); font-weight:500; }
+  svg.traced .node.frame { opacity:.42; }
+  svg.traced .node.group { opacity:.3; }
+  svg.traced .node.group.on { opacity:1; }
+  svg.traced .node.group.on .n-box { stroke:var(--moss); stroke-width:1.25; stroke-dasharray:2 6; }
+  svg.traced .node.group.on .g-label { fill:var(--moss); }
+
+  @media (max-width:900px) { .slide { grid-template-columns:1fr; } .wrap { padding:20px 18px 48px; } }
+</style>
+
+<div class="wrap">
+  <header class="bar">
+    <h1>Chromosome end fate</h1>
+    <div class="nav">
+      <button class="step" id="prev">Back</button>
+      <button class="step" id="next">Next</button>
+    </div>
+    <div class="count" id="count"></div>
+  </header>
+  <main id="stage"></main>
+</div>
+
+<script>
+const NODES = [
+  {id:'g_len',  k:'group', x:40,  y:10,   w:560, h:202, mem:['q1','sfull','sstable','serode'], label:'length maintenance', lxx:54, lyy:28},
+  {id:'g_res',  k:'group', x:40,  y:330,  w:376, h:294, mem:['q3','q4','tint','tkb'], label:'resection', lxx:54, lyy:348},
+  {id:'g_ckpt', k:'group', x:40,  y:650,  w:376, h:384, mem:['q5','q6','q7','q8'], label:'checkpoint activation', lxx:54, lyy:668},
+  {id:'g_arr',  k:'group', x:40,  y:1060, w:376, h:204, mem:['arr','qR'], label:'arrest resolution', lxx:54, lyy:1078},
+  {id:'g_join', k:'group', x:40,  y:1290, w:376, h:294, mem:['qD','qE','qF'], label:'end joining', lxx:54, lyy:1308},
+
+  {id:'fates',    k:'container', frame:true, x:500, y:912,  w:262, h:750, t:'', s:'', label:'fates', lxx:514, lyy:932},
+  {id:'prolif',   k:'container', x:508, y:950,  w:230, h:402, t:'', s:'', label:'proliferating', lxx:522, lyy:970},
+  {id:'deaths',   k:'container', x:508, y:1382, w:230, h:264, t:'', s:'', label:'death', lxx:522, lyy:1402},
+
+  {id:'q1',       k:'q',     x:60,  y:44,   w:340, h:64,  t:'Is the repeat tract maintained?', s:'telomerase sets it, Tel1 and Ku tune it'},
+  {id:'sfull',    k:'state', x:40,  y:144,  w:170, h:52,  t:'full length', s:'maintained'},
+  {id:'sstable',  k:'state', x:230, y:144,  w:170, h:52,  t:'short but stable', s:'lower setpoint'},
+  {id:'serode',   k:'state', x:420, y:144,  w:170, h:52,  t:'eroding', s:'no maintenance'},
+  {id:'q2',       k:'q',     x:60,  y:240,  w:340, h:64,  t:'Are CST, Ku and Rap1 all bound?', s:'occupancy, not sequence length'},
+  {id:'q3',       k:'q',     x:60,  y:364,  w:340, h:64,  t:'Is a resection nuclease active?', s:'Exo1, or Sgs1-Dna2 in its absence'},
+  {id:'q4',       k:'q',     x:60,  y:454,  w:340, h:64,  t:'How deep does resection run?', s:'CST loss is the dominant term'},
+  {id:'tint',     k:'state', x:60,  y:544,  w:160, h:64,  t:'intermediate', s:'duplex remains'},
+  {id:'tkb',      k:'state', x:240, y:544,  w:160, h:64,  t:'kilobase', s:'no duplex left'},
+  {id:'q5',       k:'q',     x:60,  y:684,  w:340, h:64,  t:'Is there enough ssDNA to signal?', s:'RPA-coated single strand is the signal'},
+  {id:'q6',       k:'q',     x:60,  y:774,  w:340, h:64,  t:'Is the checkpoint cascade functional?', s:'Mec1, Rad9, and either Rad53 or Chk1'},
+  {id:'q7',       k:'q',     x:60,  y:864,  w:340, h:64,  t:'Is this lesion clamp-amplified?', s:'Rad24 and 9-1-1 raise resection and Mec1 output'},
+  {id:'q8',       k:'q',     x:60,  y:954,  w:340, h:64,  t:'Is the 9-1-1 clamp loaded?', s:'Rad24, Mec3, Ddc1, Rad17'},
+  {id:'arr',      k:'hold',  x:60,  y:1094, w:340, h:64,  t:'arrest', s:'the end keeps degrading while the cell waits'},
+  {id:'qR',       k:'q',     x:60,  y:1184, w:340, h:64,  t:'How is the end resolved?', s:'recombination, adaptation, or neither'},
+  {id:'qD',       k:'q',     x:60,  y:1324, w:340, h:64,  t:'Is duplex DNA left at the terminus?', s:'reads the depth set above'},
+  {id:'qE',       k:'q',     x:60,  y:1414, w:340, h:64,  t:'Is NHEJ repression intact here?', s:'Rap1 load, with Mec1 and 9-1-1'},
+  {id:'qF',       k:'q',     x:60,  y:1504, w:340, h:64,  t:'Is the NHEJ machinery present?', s:'Ku, Lig4 and Lif1 all required'},
+
+  {id:'subnorm',  k:'live',  x:516, y:986,  w:212, h:56,  t:'normal setpoint', s:'nothing else is asked'},
+  {id:'submaint', k:'live',  x:516, y:1060, w:212, h:56,  t:'tract still maintained', s:'no nuclease acts on it'},
+  {id:'subrec',   k:'live',  x:516, y:1134, w:212, h:56,  t:'recombination', s:'survivor telomeres'},
+  {id:'subshort', k:'live',  x:516, y:1208, w:212, h:56,  t:'short setpoint', s:'telomerase-maintained'},
+  {id:'subunsig', k:'live',  x:516, y:1282, w:212, h:56,  t:'unsignalled lesion', s:'divides while resection runs'},
+  {id:'gl',       k:'death', x:516, y:1418, w:212, h:64,  t:'death by gene loss', s:'truncation, chromosome loss'},
+  {id:'fus',      k:'death', x:516, y:1492, w:212, h:64,  t:'death by fusion', s:'dicentric, breakage-fusion-bridge'},
+  {id:'arrdeath', k:'death', x:516, y:1566, w:212, h:64,  t:'death in arrest', s:'never divides again'}
+];
+
+const CQ = ' L22 1356 L52 1356';
+const EDGES = [
+  {id:'t1', d:'M140 108 L125 138', ax:60,  ay:126, aa:'start'},
+  {id:'t2', d:'M230 108 L315 138', ax:148, ay:126, aa:'start'},
+  {id:'t3', d:'M320 108 L505 138', ax:520, ay:124, aa:'start'},
+  {id:'m1', d:'M125 196 L190 232', ax:64, ay:214, aa:'start'},
+  {id:'m2', d:'M315 196 L250 232', ax:64, ay:214, aa:'start'},
+  {id:'m3', d:'M505 196 L290 232', ax:64, ay:214, aa:'start'},
+  {id:'a1', d:'M400 296 L488 296 L488 1014 L508 1014', l:'yes', lx:496, ly:286, la:'start', ax:496, ay:308, aa:'start'},
+  {id:'a2', d:'M60 288 L22 288'+CQ, l:'yes, short', lx:62, ly:222, la:'start', ax:64, ay:206, aa:'start'},
+  {id:'a3', d:'M230 304 L230 356', l:'no', lx:242, ly:322, la:'start', ax:218, ay:322, aa:'end'},
+  {id:'b1', d:'M400 396 L478 396 L478 1088 L508 1088', l:'no', lx:486, ly:386, la:'start', ax:486, ay:408, aa:'start'},
+  {id:'b2', d:'M60 410 L14 410 L14 1216 L52 1216', l:'no, eroding', lx:62, ly:352, la:'start', ax:64, ay:440, aa:'start'},
+  {id:'b3', d:'M230 428 L230 446', l:'yes', lx:242, ly:437, la:'start', ax:218, ay:437, aa:'end'},
+  {id:'c1', d:'M180 518 L140 536', l:'CST intact or partial', lx:100, ly:526, ax:100, ay:499, aa:'middle'},
+  {id:'c2', d:'M280 518 L320 536', l:'CST fully lost', lx:330, ly:526, ax:368, ay:526, aa:'start'},
+  {id:'d1', d:'M140 608 L200 676', ax:126, ay:645, aa:'middle'},
+  {id:'d2', d:'M320 608 L260 676', ax:334, ay:645, aa:'middle'},
+  {id:'e1', d:'M60 702 L22 702'+CQ, l:'no', lx:44, ly:688, ax:64, ay:747, aa:'start'},
+  {id:'e2', d:'M230 748 L230 766', l:'yes', lx:242, ly:757, la:'start', ax:218, ay:757, aa:'end'},
+  {id:'f1', d:'M60 792 L22 792'+CQ, l:'no', lx:44, ly:778, ax:64, ay:837, aa:'start'},
+  {id:'f2', d:'M230 838 L230 856', l:'yes', lx:242, ly:847, la:'start', ax:218, ay:847, aa:'end'},
+  {id:'g1', d:'M230 928 L230 946', l:'yes', lx:242, ly:937, la:'start', ax:218, ay:937, aa:'end'},
+  {id:'g2', d:'M400 896 L418 896 L418 1106 L404 1106', l:'no', lx:418, ly:882, ax:418, ay:866, aa:'middle'},
+  {id:'h1', d:'M60 986 L22 986'+CQ, l:'no', lx:44, ly:972, ax:64, ay:1031, aa:'start'},
+  {id:'h2', d:'M230 1018 L230 1086', l:'yes', lx:242, ly:1046, la:'start', ax:218, ay:1046, aa:'end'},
+  {id:'i1', d:'M230 1158 L230 1176', ax:218, ay:1167, aa:'end'},
+  {id:'rB', d:'M400 1200 L420 1200 L420 1162 L508 1162', l:'recombination', lx:428, ly:1182, la:'start', ax:428, ay:1204, aa:'start'},
+  {id:'rA', d:'M400 1216 L432 1216 L432 1450 L508 1450', l:'adaptation', lx:440, ly:1272, la:'start', ax:440, ay:1294, aa:'start'},
+  {id:'rC', d:'M400 1232 L444 1232 L444 1598 L508 1598', l:'neither', lx:452, ly:1340, la:'start', ax:452, ay:1362, aa:'start'},
+  {id:'n1', d:'M400 1356 L456 1356 L456 1450 L508 1450', l:'no', lx:462, ly:1344, la:'start', ax:462, ay:1326, aa:'start'},
+  {id:'n2', d:'M230 1388 L230 1406', l:'yes', lx:242, ly:1397, la:'start', ax:218, ay:1397, aa:'end'},
+  {id:'p1', d:'M400 1430 L468 1430 L468 1236 L508 1236', l:'yes, capped end', lx:474, ly:1418, la:'start', ax:474, ay:1398, aa:'start'},
+  {id:'p3', d:'M400 1454 L480 1454 L480 1310 L508 1310', l:'yes, uncapped end', lx:486, ly:1468, la:'start', ax:486, ay:1488, aa:'start'},
+  {id:'p2', d:'M230 1478 L230 1496', l:'no', lx:242, ly:1487, la:'start', ax:218, ay:1487, aa:'end'},
+  {id:'s1', d:'M400 1520 L496 1520 L496 1236 L508 1236', l:'no', lx:502, ly:1508, la:'start', ax:502, ay:1490, aa:'start'},
+  {id:'s2', d:'M400 1552 L460 1552 L460 1524 L508 1524', l:'yes', lx:466, ly:1568, la:'start', ax:466, ay:1586, aa:'start'}
+];
+
+const D = '\u0394';
+const P = 'prolif';
+const X = 'needs citation';
+const G = [
+  { name:'wild type', cond:'Temperature-independent',
+    nodes:['q1','sfull','q2',P,'subnorm'],
+    edges:{t1:'', m1:'', a1:''},
+    weights:{a1:'primary'},
+    steps:[['Is the tract maintained?','Yes, at full length. Telomerase acts on the shortest ends, Tel1 directs it there, and Ku and Rap1 set the ceiling.'],
+           ['CST, Ku and Rap1 all bound?','Yes. The overhang is held, the duplex tract is loaded, and no lesion is presented to any nuclease or sensor.']],
+    out:[{label:'proliferating', tone:'live', setpoint:'normal setpoint', rank:''}],
+    reported:'viable; telomeres held near 300 bp across generations',
+    cite:'',
+    observed:2,
+    caveat:'Two questions and no branch. Everything below the cap question exists because some allele elsewhere in the deck answers it no.',
+    test:'Nothing on this page can fail. It fixes the reference trace the other pages depart from, and marks how much of the tree an unperturbed end never reaches.' },
+
+  { name:'cdc13-1', temp:'23 \u00b0C', cond:'Permissive for cdc13-1',
+    nodes:['q1','sfull','q2',P,'subnorm'],
+    edges:{t1:'', m1:'', a1:''},
+    weights:{a1:'primary'},
+    steps:[['Is the tract maintained?','Yes, at full length. Telomerase and its regulators are untouched by the allele.'],
+           ['CST, Ku and Rap1 all bound?','Yes. The mutant protein folds and holds the overhang below about 26 \u00b0C, so nothing else is asked.']],
+    out:[{label:'proliferating', tone:'live', setpoint:'normal setpoint', rank:''}],
+    reported:'viable at 23 to 25 \u00b0C',
+    cite:'Garvik, Carson & Hartwell 1995, Mol Cell Biol 15:6128',
+    observed:2,
+    caveat:'Every cdc13-1 double in this deck traces identically here, so the suppressor genotypes have no separate page at this temperature.',
+    test:'Langston et al. 2020 report ssDNA in cdc13-1 even at 23 \u00b0C. If that is confirmed as checkpoint-competent, the cap question is answered yes here on a technicality and the page needs a partial state.' },
+
+  { name:'cdc13-1', temp:'27 \u00b0C', cond:'Semi-permissive for cdc13-1',
+    nodes:['q1','sfull','q2','q3','q4','tint','q5','q6','q7','q8','arr','qR','gl','arrdeath'],
+    edges:{t1:'', m1:'', a3:'cdc13-1', b3:'', c1:'cdc13-1', d1:'', e2:'', f2:'', g1:'', h2:'', i1:'', rA:'', rC:''},
+    weights:{rA:'primary', rC:'secondary'},
+    steps:[['Is the tract maintained?','Yes, at full length.'],
+           ['CST, Ku and Rap1 all bound?','No. <em>cdc13-1</em> fails to assemble a productive cap on some fraction of ends.'],
+           ['Is a resection nuclease active?','Yes. Exo1 carries most of it, with an Sgs1-Dna2 arm.'],
+           ['How deep?','Intermediate. Partial capping failure should hold the reaction inside the telomeric and subtelomeric tract.'],
+           ['Enough ssDNA to signal?','Yes.'],
+           ['Checkpoint cascade functional?','Yes, so the cell arrests.'],
+           ['Is this lesion clamp-amplified?','Yes. Rad24 and 9-1-1 raise both resection and Mec1 output at a CST-failed end.'],
+           ['9-1-1 clamp loaded?','Yes.'],
+           ['How is the end resolved?','Adaptation in most cells, which divide with the end uncapped. A minority never adapt and die arrested.']],
+    out:[{label:'death by gene loss', tone:'death', rank:'cells that adapt'},
+         {label:'death in arrest', tone:'death', rank:'cells that do not'}],
+    reported:'no colonies at 27 \u00b0C',
+    cite:'Addinall et al. 2008, Genetics 180:2251 (27 \u00b0C scoring); Klermund et al. 2014, Cell Rep 9:324 (adaptation)',
+    observed:3,
+    caveat:'No direct resection-depth map exists at 27 \u00b0C. The intermediate answer is inferred from the milder phenotype, and every step below it inherits that inference. The plate cannot separate the two outcomes.',
+    test:'A cdc5-ad derivative should stay arrested and large-budded instead of losing chromosomes, moving the whole population to the second outcome. If it dies on the same schedule with the same instability, adaptation is not the split.' },
+
+  { name:'cdc13-1 rad9'+D+' / cdc13-1 chk1'+D, temp:'27 \u00b0C', cond:'Semi-permissive for cdc13-1',
+    nodes:['q1','sfull','q2','q3','q4','tint','q5','q6','qD','qE',P,'subunsig'],
+    edges:{t1:'', m1:'', a3:'cdc13-1', b3:'', c1:'cdc13-1', d1:'', e2:'', f1:'rad9'+D+', chk1'+D, n2:'', p3:''},
+    weights:{p3:'primary'},
+    steps:[['Is the tract maintained?','Yes, at full length.'],
+           ['CST, Ku and Rap1 all bound?','No. <em>cdc13-1</em>.'],
+           ['Is a resection nuclease active?','Yes.'],
+           ['How deep?','Intermediate.'],
+           ['Enough ssDNA to signal?','Yes, and more than <em>cdc13-1</em> alone, since Rad9 restrains resection as well as reporting it.'],
+           ['Checkpoint cascade functional?','No. Nothing pauses, so the cell keeps cycling while the lesion sits there.'],
+           ['Duplex left at the terminus?','Yes. Intermediate depth leaves template for C strand fill-in.'],
+           ['NHEJ repression intact?','Yes. Rap1 load is normal on a full-length tract.']],
+    out:[{label:'proliferating', tone:'live', setpoint:'unsignalled lesion', rank:''}],
+    reported:'both are strong suppressors; colonies at 27 to 28 \u00b0C',
+    cite:'Addinall et al. 2008, Genetics 180:2251, Table 1',
+    observed:3,
+    caveat:'Rad9 is the adaptor for both the Rad53 and Chk1 arms, so chk1'+D+' should retain Rad53 signalling that rad9'+D+' lacks. The colony assay reports them alike, which means any difference between them is invisible to this page.',
+    test:'Rad53 phosphorylation should persist in cdc13-1 chk1'+D+' and be absent in cdc13-1 rad9'+D+', with colony counts equal. If chk1'+D+' also loses Rad53 activation, Rad9 and Chk1 are not in the arrangement assumed here.' },
+
+  { name:'cdc13-1 rad24'+D+' / rad17'+D+' / ddc1'+D+' / mec3'+D, temp:'27 \u00b0C', cond:'Semi-permissive for cdc13-1',
+    nodes:['q1','sfull','q2','q3','q4','tint','q5','q6','q7','q8','qD','qE',P,'subunsig'],
+    edges:{t1:'', m1:'', a3:'cdc13-1', b3:'', c1:'cdc13-1', d1:'', e2:'', f2:'', g1:'', h1:'rad24'+D+', rad17'+D+', ddc1'+D+', mec3'+D, n2:'', p3:''},
+    weights:{p3:'primary'},
+    steps:[['Is the tract maintained?','Yes, at full length.'],
+           ['CST, Ku and Rap1 all bound?','No. <em>cdc13-1</em>.'],
+           ['Is a resection nuclease active?','Yes. <em>rad24</em>'+D+' lowers how much ssDNA is made without removing the activity.'],
+           ['How deep?','Intermediate.'],
+           ['Enough ssDNA to signal?','Yes.'],
+           ['Checkpoint cascade functional?','Yes. The clamp is a sensor and sits outside the cascade.'],
+           ['Is this lesion clamp-amplified?','Yes, so the clamp question gets asked.'],
+           ['9-1-1 clamp loaded?','No. All four deletions fail here.'],
+           ['Duplex left at the terminus?','Yes.'],
+           ['NHEJ repression intact?','Yes.']],
+    out:[{label:'proliferating', tone:'live', setpoint:'unsignalled lesion', rank:''}],
+    reported:'strong suppression; colonies at 27 to 28 \u00b0C',
+    cite:'Addinall et al. 2008, Genetics 180:2251, Table 1; Zubko, Guillard & Lydall 2004, Genetics 168:103',
+    observed:3,
+    caveat:'Four genes on one page, grouped by clamp membership. Rad24 lowers ssDNA as well as signal, so it could be suppressing at the resection question; the other three could not.',
+    test:'Rad53 phosphorylation should be absent in all four. If any one of them signals normally and still forms colonies, clamp loading is not what the rescue runs through.' },
+
+  { name:'cdc13-1 exo1'+D, temp:'27 \u00b0C', cond:'Semi-permissive for cdc13-1',
+    nodes:['q1','sfull','q2','q3','q4','tint','q5','qD','qE',P,'subunsig'],
+    edges:{t1:'', m1:'', a3:'cdc13-1', b3:'exo1'+D, c1:'cdc13-1', d1:'', e1:'exo1'+D, n2:'', p3:''},
+    weights:{p3:'primary'},
+    steps:[['Is the tract maintained?','Yes, at full length.'],
+           ['CST, Ku and Rap1 all bound?','No. <em>cdc13-1</em>.'],
+           ['Is a resection nuclease active?','Yes. <em>exo1</em>'+D+' removes the main one and Sgs1-Dna2 still cuts.'],
+           ['How deep?','Intermediate, and shallow within that class.'],
+           ['Enough ssDNA to signal?','No. Less is made and it stays under the threshold.'],
+           ['Duplex left at the terminus?','Yes.'],
+           ['NHEJ repression intact?','Yes.']],
+    out:[{label:'proliferating', tone:'live', setpoint:'unsignalled lesion', rank:''}],
+    reported:'suppression; less ssDNA than cdc13-1',
+    cite:'Zubko, Guillard & Lydall 2004, Genetics 168:103',
+    observed:3,
+    caveat:'Same fate as the two pages above, reached at a different node. Here the substrate never crosses the threshold. There the substrate is present and the cascade is broken.',
+    test:'QAOS should place the ssDNA below both cdc13-1 and cdc13-1 rad9'+D+'. A cdc13-1 exo1'+D+' sgs1'+D+' double should answer no at the resection question and move to the tract-maintained node.' },
+
+  { name:'cdc13-1', temp:'36 \u00b0C', cond:'Nonpermissive for cdc13-1',
+    nodes:['q1','sfull','q2','q3','q4','tkb','q5','q6','q7','q8','arr','qR','gl','arrdeath'],
+    edges:{t1:'', m1:'', a3:'cdc13-1', b3:'', c2:'cdc13-1', d2:'', e2:'', f2:'', g1:'', h2:'', i1:'', rA:'', rC:''},
+    weights:{rA:'primary', rC:'secondary'},
+    steps:[['Is the tract maintained?','Yes, at full length at the moment of the shift.'],
+           ['CST, Ku and Rap1 all bound?','No. <em>cdc13-1</em> releases the overhang.'],
+           ['Is a resection nuclease active?','Yes. Resection is detectable within 30 minutes.'],
+           ['How deep?','Kilobase. It reaches subtelomeric X and unique sequence.'],
+           ['Enough ssDNA to signal?','Yes.'],
+           ['Checkpoint cascade functional?','Yes, so the cell arrests, and the end keeps degrading while it waits.'],
+           ['Is this lesion clamp-amplified?','Yes.'],
+           ['9-1-1 clamp loaded?','Yes.'],
+           ['How is the end resolved?','Adaptation in most cells by 24 hours. A minority never adapt and die arrested.']],
+    out:[{label:'death by gene loss', tone:'death', rank:'cells that adapt'},
+         {label:'death in arrest', tone:'death', rank:'cells that do not'}],
+    reported:'Rad9-dependent G2/M arrest at four to eight hours; no colonies',
+    cite:'Garvik, Carson & Hartwell 1995, Mol Cell Biol 15:6128; Toczyski, Galgoczy & Hartwell 1997, Cell 90:1097',
+    observed:6,
+    caveat:'Two observation windows on one page. The arrest is a microscopy endpoint at hours; the colony failure is a plate endpoint at days. The resolution step is the bridge between them.',
+    test:'Toczyski reports cdc13-1 cdc5-ad cells staying large-budded while wild-type cdc13-1 mostly adapts by 24 hours. If that split does not hold, the two outcomes are not reached by different routes.' },
+
+  { name:'cdc13-1 rad9'+D, temp:'36 \u00b0C', cond:'Nonpermissive for cdc13-1',
+    nodes:['q1','sfull','q2','q3','q4','tkb','q5','q6','qD','gl'],
+    edges:{t1:'', m1:'', a3:'cdc13-1', b3:'', c2:'cdc13-1', d2:'', e2:'', f1:'rad9'+D, n1:''},
+    weights:{n1:'primary'},
+    steps:[['Is the tract maintained?','Yes.'],
+           ['CST, Ku and Rap1 all bound?','No. <em>cdc13-1</em>.'],
+           ['Is a resection nuclease active?','Yes, and Exo1 is no longer required for ssDNA in X and single-copy sequence once Rad9 is gone.'],
+           ['How deep?','Kilobase, into telomeric and telomere-proximal DNA.'],
+           ['Enough ssDNA to signal?','Yes.'],
+           ['Checkpoint cascade functional?','No, so nothing pauses.'],
+           ['Duplex left at the terminus?','No. Kilobase resection has removed it.']],
+    out:[{label:'death by gene loss', tone:'death', rank:''}],
+    reported:'continued division, rapid loss of viability',
+    cite:'Garvik, Carson & Hartwell 1995, Mol Cell Biol 15:6128; Zubko et al. 2004, Genetics 168:103',
+    observed:7,
+    caveat:'Losing the cascade changes which nuclease operates, so the checkpoint answer feeds back onto the resection answer two questions above. A tree cannot hold that loop, and this page is where it shows.',
+    test:'Same genotype as the 27 \u00b0C page, opposite outcome, with depth the only differing answer. If a strain held at 27 \u00b0C long enough to reach kilobase depth still forms colonies, depth is not the separator.' },
+
+  { name:'cdc13-1 rad24'+D, temp:'36 \u00b0C', cond:'Nonpermissive for cdc13-1',
+    nodes:['q1','sfull','q2','q3','q4','tkb','q5','q6','q7','q8','qD','gl'],
+    edges:{t1:'', m1:'', a3:'cdc13-1', b3:'', c2:'cdc13-1', d2:'', e2:'', f2:'', g1:'', h1:'rad24'+D, n1:''},
+    weights:{n1:'primary'},
+    steps:[['Is the tract maintained?','Yes.'],
+           ['CST, Ku and Rap1 all bound?','No. <em>cdc13-1</em>.'],
+           ['Is a resection nuclease active?','Yes, at reduced output.'],
+           ['How deep?','Kilobase.'],
+           ['Enough ssDNA to signal?','Yes.'],
+           ['Checkpoint cascade functional?','Yes.'],
+           ['Is this lesion clamp-amplified?','Yes.'],
+           ['9-1-1 clamp loaded?','No.'],
+           ['Duplex left at the terminus?','No.']],
+    out:[{label:'death by gene loss', tone:'death', rank:''}],
+    reported:'no arrest at high temperature',
+    cite:'Zubko, Guillard & Lydall 2004, Genetics 168:103',
+    observed:8,
+    test:'Compare with yku70'+D+' rad24'+D+', where the amplification question answers no. If rad24'+D+' reduces ssDNA in both backgrounds equally, the asymmetry is gone and the amplification node has nothing to explain.' },
+
+  { name:'cdc13-1 exo1'+D, temp:'36 \u00b0C', cond:'Nonpermissive for cdc13-1',
+    nodes:['q1','sfull','q2','q3','q4','tkb','q5','q6','q7','q8','arr','qR','gl','arrdeath'],
+    edges:{t1:'', m1:'', a3:'cdc13-1', b3:'exo1'+D, c2:'cdc13-1', d2:'', e2:'', f2:'', g1:'', h2:'', i1:'', rA:'', rC:''},
+    weights:{rA:'primary', rC:'secondary'},
+    steps:[['Is the tract maintained?','Yes.'],
+           ['CST, Ku and Rap1 all bound?','No. <em>cdc13-1</em>.'],
+           ['Is a resection nuclease active?','Yes. The Sgs1-Dna2 arm works without Exo1 at a CST-failed end.'],
+           ['How deep?','Kilobase, reached more slowly.'],
+           ['Enough ssDNA to signal?','Yes, at lower levels than <em>cdc13-1</em>.'],
+           ['Checkpoint cascade functional?','Yes, so the cell arrests, with slower kinetics.'],
+           ['Is this lesion clamp-amplified?','Yes.'],
+           ['9-1-1 clamp loaded?','Yes.'],
+           ['How is the end resolved?','Adaptation, or death in arrest.']],
+    out:[{label:'death by gene loss', tone:'death', rank:'cells that adapt'},
+         {label:'death in arrest', tone:'death', rank:'cells that do not'}],
+    reported:'arrests at medial nuclear division, slower than cdc13-1; less ssDNA at Y\u2032 600',
+    cite:'Maringele & Lydall 2002, Genes Dev 16:1919; Bonetti et al. 2009, Mol Cell 35:70',
+    observed:6,
+    caveat:'This is the page a single Exo1 question would get wrong. Asking only about Exo1 sends this strain to the tract-maintained node and predicts growth, which is not what happens.',
+    test:'A cdc13-1 exo1'+D+' sgs1'+D+' double at 36 \u00b0C should answer no at the resection question and survive. That double is not directly reported anywhere; only the rad9'+D+' triple is. If it still arrests, a third nuclease is missing from the node.' },
+
+  { name:'cdc13-1 rad9'+D+' sgs1'+D+' exo1'+D, temp:'36 \u00b0C', cond:'Nonpermissive for cdc13-1',
+    nodes:['q1','sfull','q2','q3',P,'submaint'],
+    edges:{t1:'', m1:'', a3:'cdc13-1', b1:'exo1'+D+' sgs1'+D},
+    weights:{b1:'primary'},
+    steps:[['Is the tract maintained?','Yes, at full length. Telomerase is untouched.'],
+           ['CST, Ku and Rap1 all bound?','No. <em>cdc13-1</em> leaves the end uncapped.'],
+           ['Is a resection nuclease active?','No. Both long-range pathways are gone and the tract is not shortening, so nothing runs down and nothing chews in.']],
+    out:[{label:'proliferating', tone:'live', setpoint:'tract still maintained', rank:''}],
+    reported:'viable; linear chromosomes maintained without Cdc13 capping',
+    cite:'Ngo & Lydall 2010, PLoS Genet 6:e1001072',
+    observed:3,
+    caveat:'Protection is never restored. The cell divides because the reaction that would destroy the end is gone.',
+    test:'<em>rad9</em>'+D+' is in the genotype and the trace stops before the cascade question, so the tree predicts cdc13-1 exo1'+D+' sgs1'+D+' is viable without it. That double is not reported. If it is inviable, a node is missing between resection and the cascade.' },
+
+  { name:'yku70'+D+' cdc13-1', temp:'36 \u00b0C', cond:'Nonpermissive for cdc13-1 and for yku70'+D,
+    nodes:['q1','sstable','q2','q3','q4','tkb','q5','q6','q7','q8','arr','qR','gl','arrdeath'],
+    edges:{t2:'yku70'+D, m2:'', a3:'cdc13-1, yku70'+D, b3:'', c2:'cdc13-1', d2:'', e2:'', f2:'', g1:'', h2:'', i1:'', rA:'', rC:''},
+    weights:{rA:'primary', rC:'secondary'},
+    steps:[['Is the tract maintained?','Yes, at a lower setpoint set by <em>yku70</em>'+D+'.'],
+           ['CST, Ku and Rap1 all bound?','No. Both alleles fail here.'],
+           ['Is a resection nuclease active?','Yes.'],
+           ['How deep?','Kilobase. About 10 kb per end, with roughly half of chromosomes carrying at least one resected end.'],
+           ['Enough ssDNA to signal?','Yes.'],
+           ['Checkpoint cascade functional?','Yes.'],
+           ['Is this lesion clamp-amplified?','Yes, because the CST-failed end is the deeper lesion and sets the answer.'],
+           ['9-1-1 clamp loaded?','Yes.'],
+           ['How is the end resolved?','Adaptation, or death in arrest.']],
+    out:[{label:'death by gene loss', tone:'death', rank:'cells that adapt'},
+         {label:'death in arrest', tone:'death', rank:'cells that do not'}],
+    reported:'about 10 kb per telomere end; survival is strain-background dependent',
+    cite:'Westmoreland et al. 2018, DNA Repair 62:12',
+    observed:5,
+    caveat:'Both alleles answer no at the cap question and only the deeper one is scored. The amplification question is contested here: cdc13-1 answers yes and yku70'+D+' answers no, and the page arbitrates in favour of cdc13-1.',
+    test:'The background-dependent survivors have no branch on this page. If they are Rad52-dependent, the recombination exit should carry them and the page is wrong to end in death.' },
+
+  { name:'cdc13'+D+' exo1'+D+' sgs1'+D+' rad9'+D+' rad24'+D+' pif1'+D, cond:'Temperature-independent',
+    nodes:['q1','serode','q2','q3','qR','subrec','arrdeath',P],
+    edges:{t3:'cdc13'+D, m3:'', a3:'cdc13'+D, b2:'exo1'+D+' sgs1'+D, rB:'', rC:''},
+    weights:{rB:'primary', rC:'secondary'},
+    steps:[['Is the tract maintained?','No. <em>cdc13</em>'+D+' removes Est1 recruitment, and with it the Pol1 recruitment that fills in the C strand.'],
+           ['CST, Ku and Rap1 all bound?','No. The protein is deleted.'],
+           ['Is a resection nuclease active?','No, but the tract is eroding, so this is not a stable end.'],
+           ['How is the end resolved?','Recombination. Rad52 is present and <em>pif1</em>'+D+' removes an inhibitor of recombination at ends.']],
+    out:[{label:'proliferating', tone:'live', setpoint:'recombination-maintained', rank:'reported outcome'},
+         {label:'death in arrest', tone:'death', rank:'cells that fail to recombine'}],
+    reported:'viable',
+    cite:'Ngo & Lydall 2010, PLoS Genet 6:e1001072',
+    observed:1,
+    test:'These telomeres should look like survivor telomeres on a Southern and the strain should die on deletion of RAD52. If it survives without Rad52, the recombination exit is the wrong one.' },
+
+  { name:'cdc13-2', cond:'Temperature-independent',
+    nodes:['q1','serode','q2','q3','q4','tint','q5','q6','q7','arr','qR','gl','arrdeath','subrec',P],
+    edges:{t3:'cdc13-2', m3:'', a3:'', b3:'', c1:'', d1:'', e2:'', f2:'', g2:'', i1:'', rA:'', rB:'', rC:''},
+    weights:{rA:'primary', rB:'secondary', rC:'secondary'},
+    steps:[['Is the tract maintained?','No. <em>cdc13-2</em> abolishes Est1 recruitment, so there is no setpoint and the array erodes.'],
+           ['CST, Ku and Rap1 all bound?','No. Cdc13 is present and binding, but Rap1 has come off the shortened array.'],
+           ['Is a resection nuclease active?','Yes.'],
+           ['How deep?','Intermediate. CST itself is intact.'],
+           ['Enough ssDNA to signal?','Yes.'],
+           ['Checkpoint cascade functional?','Yes, so the cell arrests.'],
+           ['Is this lesion clamp-amplified?','No. CST is bound, so this is not a clamp-amplified lesion.'],
+           ['How is the end resolved?','Adaptation in most cells, recombination in a few, and neither in the rest.']],
+    out:[{label:'death by gene loss', tone:'death', rank:'most cells, by adaptation'},
+         {label:'proliferating', tone:'live', setpoint:'recombination-maintained', rank:'rare survivors'},
+         {label:'death in arrest', tone:'death', rank:'the remainder'}],
+    reported:'senescence',
+    cite:X,
+    observed:6,
+    caveat:'Survivors do not restore a normal end: type I amplify Y\u2032 elements, type II carry long heterogeneous tracts.',
+    test:'The amplification answer is untested here. If rad24'+D+' rescues cdc13-2 senescence, this is a clamp-amplified lesion after all and the answer flips.' },
+
+  { name:'tlc1'+D+' / est2'+D, cond:'Temperature-independent',
+    nodes:['q1','serode','q2','q3','q4','tint','q5','q6','q7','arr','qR','gl','arrdeath','subrec',P],
+    edges:{t3:'tlc1'+D, m3:'', a3:'', b3:'', c1:'', d1:'', e2:'', f2:'', g2:'', i1:'', rA:'', rB:'', rC:''},
+    weights:{rA:'primary', rB:'secondary', rC:'secondary'},
+    steps:[['Is the tract maintained?','No. <em>tlc1</em>'+D+' removes telomerase entirely.'],
+           ['CST, Ku and Rap1 all bound?','No. Rap1 load falls as the array shortens.'],
+           ['Is a resection nuclease active?','Yes.'],
+           ['How deep?','Intermediate.'],
+           ['Enough ssDNA to signal?','Yes.'],
+           ['Checkpoint cascade functional?','Yes, so the cell arrests at the shortest end.'],
+           ['Is this lesion clamp-amplified?','No.'],
+           ['How is the end resolved?','Adaptation drives most of the escape, and it carries genome instability with it. Recombination rescues a few.']],
+    out:[{label:'death by gene loss', tone:'death', rank:'most cells, by adaptation'},
+         {label:'proliferating', tone:'live', setpoint:'recombination-maintained', rank:'rare survivors'},
+         {label:'death in arrest', tone:'death', rank:'the remainder'}],
+    reported:'Mec1 arrest at the shortest end; adaptation promotes genome instability',
+    cite:'Coutelier et al. 2018, Genes Dev 32:1499',
+    observed:6,
+    test:'Survivor frequency should track Rad52 and adaptation should track Cdc5. If checkpoint deletion raises survivor frequency, the arrest node is doing something the tree does not have it doing.' },
+
+  { name:'est2'+D+' rad52'+D, cond:'Temperature-independent',
+    nodes:['q1','serode','q2','q3','q4','tint','q5','q6','q7','arr','qR','gl','arrdeath'],
+    edges:{t3:'est2'+D, m3:'', a3:'', b3:'', c1:'', d1:'', e2:'', f2:'', g2:'', i1:'', rA:'', rC:'rad52'+D},
+    weights:{rA:'primary', rC:'secondary'},
+    steps:[['Is the tract maintained?','No. <em>est2</em>'+D+'.'],
+           ['CST, Ku and Rap1 all bound?','No.'],
+           ['Is a resection nuclease active?','Yes.'],
+           ['How deep?','Intermediate.'],
+           ['Enough ssDNA to signal?','Yes.'],
+           ['Checkpoint cascade functional?','Yes.'],
+           ['Is this lesion clamp-amplified?','No.'],
+           ['How is the end resolved?','<em>rad52</em>'+D+' closes the recombination exit, so adaptation carries the escape and the rest die arrested.']],
+    out:[{label:'death by gene loss', tone:'death', rank:'cells that adapt'},
+         {label:'death in arrest', tone:'death', rank:'the remainder'}],
+    reported:'senescence, no recombination escape',
+    cite:X,
+    observed:7,
+    caveat:'Whether NHEJ also contributes is the Hackett versus Meyer and Bailis dispute, which is the est2'+D+' dnl4'+D+' page left out of this deck.',
+    test:'A cdc5-ad derivative should move the whole population to the second outcome. If it dies at the same rate, adaptation is not contributing here.' },
+
+  { name:'tel1'+D, cond:'Temperature-independent',
+    nodes:['q1','sstable','q2','qD','qE',P,'subshort'],
+    edges:{t2:'tel1'+D, m2:'', a2:'', n2:'', p1:''},
+    weights:{p1:'primary'},
+    steps:[['Is the tract maintained?','Yes, at a lower setpoint. <em>tel1</em>'+D+' stops telomerase being directed to the shortest ends, so telomeres shorten and then hold.'],
+           ['CST, Ku and Rap1 all bound?','Yes, on a short tract. No resection lesion, but the end is now a joining substrate.'],
+           ['Duplex left at the terminus?','Yes. Nothing was resected.'],
+           ['NHEJ repression intact?','Yes. Mec1 and the 9-1-1 genes are intact.']],
+    out:[{label:'proliferating', tone:'live', setpoint:'short setpoint', rank:''}],
+    reported:'very short, stable; viable',
+    cite:X,
+    observed:4,
+    caveat:'The difference from cdc13-2 is maintenance, not recruitment. tel1'+D+' reaches a new equilibrium; cdc13-2 has none and erodes without a floor.',
+    test:'Fusion frequency should be at background. Any measurable Lig4-dependent fusion in the single mutant means repression is already partial at this setpoint.' },
+
+  { name:'mec1'+D+' tel1'+D, cond:'Temperature-independent',
+    nodes:['q1','sstable','q2','qD','qE','qF','fus'],
+    edges:{t2:'tel1'+D, m2:'', a2:'', n2:'', p2:'mec1'+D, s2:''},
+    weights:{s2:'primary'},
+    steps:[['Is the tract maintained?','Yes, at a lower setpoint. <em>tel1</em>'+D+'.'],
+           ['CST, Ku and Rap1 all bound?','Yes, on a short tract.'],
+           ['Duplex left at the terminus?','Yes.'],
+           ['NHEJ repression intact?','No. <em>mec1</em>'+D+' removes the second layer over an already short array.'],
+           ['NHEJ machinery present?','Yes. Ku, Lig4 and Lif1 are all intact.']],
+    out:[{label:'death by fusion', tone:'death', rank:''}],
+    reported:'Lig4-dependent telomere-telomere fusions',
+    cite:X,
+    observed:5,
+    test:'Fusions should disappear in a dnl4'+D+' derivative and should not require the setpoint to fall further. If they persist without Lig4, the terminal reaction is not NHEJ.' },
+
+  { name:'mec3'+D+' tel1'+D+' / ddc1'+D+' tel1'+D+' / mre11'+D+' mec1'+D, cond:'Temperature-independent',
+    nodes:['q1','sstable','q2','qD','qE','qF','fus'],
+    edges:{t2:'tel1'+D+' / mre11'+D, m2:'', a2:'', n2:'', p2:'mec3'+D+', ddc1'+D, s2:''},
+    weights:{s2:'primary'},
+    steps:[['Is the tract maintained?','Yes, at a lower setpoint, set by <em>tel1</em>'+D+' or <em>mre11</em>'+D+'.'],
+           ['CST, Ku and Rap1 all bound?','Yes, on a short tract.'],
+           ['Duplex left at the terminus?','Yes.'],
+           ['NHEJ repression intact?','No. Mec3, Ddc1 and Mec1 are all on the repression list.'],
+           ['NHEJ machinery present?','Yes.']],
+    out:[{label:'death by fusion', tone:'death', rank:''}],
+    reported:'highest fusion rates',
+    cite:X,
+    observed:5,
+    caveat:'Mre11 reaches this outcome by lowering the setpoint, not by acting at the joint. Bonetti 2009 and Foster 2006 disagree in sign about MRX at uncapped ends, and the tree has no initiation node, so it inherits neither position.',
+    test:'If mre11'+D+' raises fusion without shortening telomeres, it is acting at the joint and the page has it on the wrong node.' },
+
+  { name:'yku70'+D+' / yku80'+D, temp:'23 \u00b0C', cond:'Permissive for yku70'+D,
+    nodes:['q1','sstable','q2','q3','q4','tint','q5','qD','qE',P,'subunsig'],
+    edges:{t2:'yku70'+D, m2:'', a3:'yku70'+D, b3:'', c1:'', d1:'', e1:'', n2:'', p3:''},
+    weights:{p3:'primary'},
+    steps:[['Is the tract maintained?','Yes, at a lower setpoint. Ku binds the TLC1 RNA at any temperature, so the equilibrium settles short here too.'],
+           ['CST, Ku and Rap1 all bound?','No. The deletion takes Ku off the terminus at 23 \u00b0C as well.'],
+           ['Is a resection nuclease active?','Yes, Exo1.'],
+           ['How deep?','Intermediate, and shallow within that class.'],
+           ['Enough ssDNA to signal?','No. This is the one answer in the trace that temperature changes.'],
+           ['Duplex left at the terminus?','Yes.'],
+           ['NHEJ repression intact?','Yes. Mec1 and the 9-1-1 genes are intact.']],
+    out:[{label:'proliferating', tone:'live', setpoint:'unsignalled lesion', rank:''}],
+    reported:'viable, short and stable; telomeric ssDNA detectable without arrest',
+    cite:'Maringele & Lydall 2002, Genes Dev 16:1919',
+    observed:5,
+    caveat:'Putting the temperature at the ssDNA question is an inference. What is reported is arrest at 36 \u00b0C and none at 23 \u00b0C, which the tree can only express as single strand crossing the signalling threshold.',
+    test:'Rad53 phosphorylation should track the QAOS measurement across the range. If ssDNA is flat across temperature and arrest is not, the temperature is acting somewhere other than this node.' },
+
+  { name:'yku70'+D+' / yku80'+D, temp:'36 \u00b0C', cond:'Nonpermissive for yku70'+D,
+    nodes:['q1','sstable','q2','q3','q4','tint','q5','q6','q7','arr','qR','gl','arrdeath'],
+    edges:{t2:'yku70'+D, m2:'', a3:'yku70'+D, b3:'', c1:'', d1:'', e2:'', f2:'', g2:'', i1:'', rA:'', rC:''},
+    weights:{rA:'primary', rC:'secondary'},
+    steps:[['Is the tract maintained?','Yes, at a lower setpoint. Ku binds the TLC1 RNA, so <em>yku70</em>'+D+' lowers telomerase action and the equilibrium settles short.'],
+           ['CST, Ku and Rap1 all bound?','No. The same deletion also removes Ku from the terminus. Two jobs, two questions.'],
+           ['Is a resection nuclease active?','Yes. Exo1 carries nearly all of it at a Ku-less end, with Sgs1 minor at most.'],
+           ['How deep?','Intermediate. CST still holds the terminus, and ssDNA stays largely in Y\u2032 repeats.'],
+           ['Enough ssDNA to signal?','Yes, on the TG strand.'],
+           ['Checkpoint cascade functional?','Yes, so the cell arrests. Rad9, Mec1 and Chk1 carry it.'],
+           ['Is this lesion clamp-amplified?','No. Rad24, Mec3 and Ddc1 are insignificant for ssDNA and arrest here.'],
+           ['How is the end resolved?','Adaptation, or death in arrest. Ku is not coming back and the tract is not eroding, so recombination has nothing to act on.']],
+    out:[{label:'death by gene loss', tone:'death', rank:'cells that adapt'},
+         {label:'death in arrest', tone:'death', rank:'cells that do not'}],
+    reported:'G2 arrest and loss of viability; ssDNA rises at Y\u2032 600',
+    cite:'Maringele & Lydall 2002, Genes Dev 16:1919',
+    observed:7,
+    caveat:'Roughly a fifth of this arrest runs through Mad2 rather than the damage cascade. The tree has one cascade question and cannot separate them.',
+    test:'A mad2'+D+' derivative should partially relieve the arrest without changing the ssDNA. If it changes ssDNA too, the spindle checkpoint is feeding back on resection and needs a node.' },
+
+  { name:'yku70'+D+' exo1'+D, temp:'36 \u00b0C', cond:'Nonpermissive for yku70'+D,
+    nodes:['q1','sstable','q2','q3',P,'submaint'],
+    edges:{t2:'yku70'+D, m2:'', a3:'yku70'+D, b1:'exo1'+D},
+    weights:{b1:'primary'},
+    steps:[['Is the tract maintained?','Yes, at a lower setpoint.'],
+           ['CST, Ku and Rap1 all bound?','No. <em>yku70</em>'+D+'.'],
+           ['Is a resection nuclease active?','No. Exo1 is the only one that acts at a Ku-less end, and Sgs1-Dna2 does not substitute here.']],
+    out:[{label:'proliferating', tone:'live', setpoint:'tract still maintained', rank:''}],
+    reported:'extremely low subtelomeric ssDNA; suppresses arrest and death',
+    cite:'Maringele & Lydall 2002, Genes Dev 16:1919',
+    observed:3,
+    caveat:'The contrast with cdc13-1 exo1'+D+' is the whole content of this page. Same deletion, same question, opposite answer, because the two ends recruit different nucleases.',
+    test:'A yku70'+D+' sgs1'+D+' double should look like yku70'+D+' alone. That comparison is not directly reported. If it suppresses, Sgs1-Dna2 does act at this end and the answer here is wrong.' },
+
+  { name:'yku70'+D+' rad9'+D, temp:'36 \u00b0C', cond:'Nonpermissive for yku70'+D,
+    nodes:['q1','sstable','q2','q3','q4','tint','q5','q6','qD','qE',P,'subunsig'],
+    edges:{t2:'yku70'+D, m2:'', a3:'yku70'+D, b3:'', c1:'', d1:'', e2:'', f1:'rad9'+D, n2:'', p3:''},
+    weights:{p3:'primary'},
+    steps:[['Is the tract maintained?','Yes, at a lower setpoint.'],
+           ['CST, Ku and Rap1 all bound?','No. <em>yku70</em>'+D+'.'],
+           ['Is a resection nuclease active?','Yes.'],
+           ['How deep?','Intermediate.'],
+           ['Enough ssDNA to signal?','Yes, at the same level as <em>yku70</em>'+D+' alone.'],
+           ['Checkpoint cascade functional?','No. <em>rad9</em>'+D+' breaks it, so the cell never pauses.'],
+           ['Duplex left at the terminus?','Yes. Intermediate depth leaves duplex.'],
+           ['NHEJ repression intact?','Yes. Mec1 and 9-1-1 are intact.']],
+    out:[{label:'proliferating', tone:'live', setpoint:'unsignalled lesion', rank:''}],
+    reported:'grows at 36 \u00b0C; ssDNA comparable to yku70'+D,
+    cite:'Maringele & Lydall 2002, Genes Dev 16:1919',
+    observed:6,
+    caveat:'Two independent things protect this cell. Repression is intact, and even if it were lifted, yku70'+D+' has removed a required NHEJ factor. Ku fails as a cap at the top of the tree and would fail as an executor at the bottom.',
+    test:'Residual arrest should remain and should be Mad2-dependent. If a mad2'+D+' derivative grows no better, the spindle contribution is not there.' },
+
+  { name:'yku70'+D+' rad24'+D, temp:'36 \u00b0C', cond:'Nonpermissive for yku70'+D,
+    nodes:['q1','sstable','q2','q3','q4','tint','q5','q6','q7','arr','qR','gl','arrdeath'],
+    edges:{t2:'yku70'+D, m2:'', a3:'yku70'+D, b3:'', c1:'', d1:'', e2:'', f2:'', g2:'', i1:'', rA:'', rC:''},
+    weights:{rA:'primary', rC:'secondary'},
+    steps:[['Is the tract maintained?','Yes, at a lower setpoint.'],
+           ['CST, Ku and Rap1 all bound?','No. <em>yku70</em>'+D+'.'],
+           ['Is a resection nuclease active?','Yes, and <em>rad24</em>'+D+' does not reduce it here.'],
+           ['How deep?','Intermediate.'],
+           ['Enough ssDNA to signal?','Yes.'],
+           ['Checkpoint cascade functional?','Yes.'],
+           ['Is this lesion clamp-amplified?','No, so the clamp question is skipped and <em>rad24</em>'+D+' is never tested.'],
+           ['How is the end resolved?','Adaptation, or death in arrest.']],
+    out:[{label:'death by gene loss', tone:'death', rank:'cells that adapt'},
+         {label:'death in arrest', tone:'death', rank:'cells that do not'}],
+    reported:'minor effect on growth at restrictive temperature',
+    cite:'Maringele & Lydall 2002, Genes Dev 16:1919',
+    observed:7,
+    skipped:6,
+    caveat:'Compare with the rad9'+D+' page. rad9'+D+' rescues and rad24'+D+' does not, because this lesion is not clamp-amplified. The same pair of deletions at a CST-failed end both rescue.',
+    test:'If rad24'+D+' turns out to reduce ssDNA in yku70'+D+' as strongly as it does in cdc13-1, the amplification question has nothing to explain and should be removed.' }
+];
+
+function svgTree(g) {
+  const nodeOn = g ? new Set(g.nodes) : null;
+  const edgeMap = g ? g.edges : null;
+  const wMap = (g && g.weights) || {};
+  let s = '<svg viewBox="0 0 780 1700" role="img" class="' + (g ? 'traced' : '') + '">';
+  s += '<title>Decision tree for chromosome end fate</title>';
+  s += '<desc>Questions on tract maintenance, cap occupancy, Exo1, resection depth, checkpoint signalling, restoration after arrest, and the terminal NHEJ reaction, ending in proliferation, gene loss or fusion.</desc>';
+  s += '<defs><marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">';
+  s += '<path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>';
+
+  NODES.filter(function (n) { return n.k === 'group'; }).forEach(function (c) {
+    const lit = nodeOn && c.mem.some(function (m) { return nodeOn.has(m); });
+    s += '<g class="node group' + (lit ? ' on' : '') + '">';
+    s += '<rect class="n-box" x="' + c.x + '" y="' + c.y + '" width="' + c.w + '" height="' + c.h + '" rx="14"/>';
+    s += '<text class="g-label" x="' + c.lxx + '" y="' + c.lyy + '" dominant-baseline="central">' + c.label + '</text></g>';
+  });
+
+  NODES.filter(function (n) { return n.k === 'container'; }).forEach(function (c) {
+    s += '<g class="node container' + (c.frame ? ' frame' : '') + (nodeOn && nodeOn.has(c.id) ? ' on' : '') + '">';
+    s += '<rect class="n-box" x="' + c.x + '" y="' + c.y + '" width="' + c.w + '" height="' + c.h + '" rx="16"/>';
+    s += '<text class="n-title" x="' + c.lxx + '" y="' + c.lyy + '" dominant-baseline="central">' + c.label + '</text></g>';
+  });
+
+  EDGES.forEach(function (e) {
+    const active = edgeMap && Object.prototype.hasOwnProperty.call(edgeMap, e.id);
+    const w = active && wMap[e.id] ? ' w-' + wMap[e.id] : '';
+    s += '<g class="edgegroup' + (active ? ' on' : '') + w + '">';
+    s += '<path class="edge" d="' + e.d + '" marker-end="url(#ar)"/>';
+    if (e.l) {
+      s += '<text class="e-label" x="' + e.lx + '" y="' + e.ly + '" text-anchor="' + (e.la === 'start' ? 'start' : 'middle') + '" dominant-baseline="central">' + e.l + '</text>';
+    }
+    if (active && edgeMap[e.id]) {
+      s += '<text class="e-allele" x="' + (e.ax !== undefined ? e.ax : e.lx) + '" y="' + (e.ay !== undefined ? e.ay : e.ly + 15) + '" text-anchor="' + (e.aa || 'middle') + '" dominant-baseline="central">' + edgeMap[e.id] + '</text>';
+    }
+    s += '</g>';
+  });
+
+  NODES.filter(function (n) { return n.k !== 'container' && n.k !== 'group'; }).forEach(function (n) {
+    const cx = n.x + n.w / 2;
+    const cy = n.h > 100 ? n.y + 44 : n.y;
+    s += '<g class="node n-' + n.k + (nodeOn && nodeOn.has(n.id) ? ' on' : '') + '">';
+    s += '<rect class="n-box" x="' + n.x + '" y="' + n.y + '" width="' + n.w + '" height="' + n.h + '" rx="7"/>';
+    s += '<text class="n-title" x="' + cx + '" y="' + (cy + 22) + '" text-anchor="middle" dominant-baseline="central">' + n.t + '</text>';
+    s += '<text class="n-sub" x="' + cx + '" y="' + (cy + 43) + '" text-anchor="middle" dominant-baseline="central">' + n.s + '</text>';
+    s += '</g>';
+  });
+  return s + '</svg>';
+}
+
+function renderIntro() {
+  return '<div class="slide solo"><div><div class="intro">' +
+    '<p>The dashed box on the right holds every place a chromosome end can finish. Proliferating and death each carry a box of their own, because the routes into them differ. Proliferation splits by how length is being held and whether a lesion is still present; death splits by whether the cell divided again before it died.</p>' +
+    '<p>The questions are grouped by what they are about: length maintenance, resection, checkpoint activation, arrest resolution, and end joining. A group lights when a trace touches any question inside it. The cap question sits outside every group, because every page either stops there or passes through it.</p>' +
+    '<p>Arrest is a pause, not a fate. The question after it has three exits: Rad52 recombination, adaptation into division with the end still uncapped, and neither. Reversing a <em>cdc13-1</em> lesion takes a shift back to permissive temperature, so it is not a branch here. Each page names one fixed condition and no page moves the temperature.</p>' +
+    '<p>Temperature-sensitive alleles get one page per temperature, and permissivity is named against the allele it applies to. A page with no conditional allele carries no temperature, which is deliberate rather than missing.</p>' +
+    '<p>Each page is a prediction. Steps below the measurement marker run past what the cited experiment reports, and the verdict on those pages is marked as predicted. The falsifier line names what would break the page.</p>' +
+    '<p>On the genotype slides a thick arrow is the common outcome and a dashed arrow is the rarer one. Alleles that force a branch sit beside it in red.</p>' +
+    '</div><div class="figure">' + svgTree(null) + '</div></div></div>';
+}
+
+function renderGenotype(g) {
+  let steps = '<ol class="trace">';
+  const obs = (g.observed === undefined) ? g.steps.length : g.observed;
+  g.steps.forEach(function (st, idx) {
+    const c = [];
+    if (g.skipped !== undefined && idx === g.skipped) { c.push('skipped'); }
+    if (idx >= obs) { c.push('inferred'); }
+    const cls = c.length ? ' class="' + c.join(' ') + '"' : '';
+    steps += '<li' + cls + '><div class="q">' + st[0] + '</div><div class="a">' + st[1] + '</div></li>';
+    if (idx === obs - 1 && obs < g.steps.length) {
+      steps += '<li class="mark">measurement stops here</li>';
+    }
+  });
+  steps += '</ol>';
+
+  let v = '';
+  const pred = obs < g.steps.length;
+  g.out.forEach(function (o, idx) {
+    v += '<div class="verdict ' + o.tone + (idx > 0 ? ' secondary' : '') + (pred ? ' predicted' : '') + '">';
+    if (o.rank) v += '<div class="rank">' + o.rank + '</div>';
+    v += '<div class="label">' + o.label + '</div>';
+    if (o.setpoint) v += '<div class="setpoint">' + o.setpoint + '</div>';
+    if (pred) v += '<div class="basis">predicted, past the reported endpoint</div>';
+    v += '</div>';
+  });
+  v += '<div class="reported">Reported: <span>' + g.reported + '</span></div>';
+  if (g.cite) {
+    v += '<div class="cite' + (g.cite === X ? ' missing' : '') + '">Citation: <span>' + g.cite + '</span></div>';
+  }
+  if (g.caveat) v += '<div class="caveat">' + g.caveat + '</div>';
+  if (g.test) v += '<div class="test"><b>Would falsify:</b> ' + g.test + '</div>';
+
+  return '<div class="slide"><div class="figure">' + svgTree(g) + '</div>' +
+    '<div class="panel"><h2 class="genotype">' + g.name +
+    (g.temp ? '<span class="temp">' + g.temp + '</span>' : '') +
+    (g.cond ? '<div class="cond">' + g.cond + '</div>' : '') + '</h2>' +
+    steps + v + '</div></div>';
+}
+
+let i = 0;
+const total = G.length + 1;
+const stage = document.getElementById('stage');
+const count = document.getElementById('count');
+const prev = document.getElementById('prev');
+const next = document.getElementById('next');
+
+function draw() {
+  stage.innerHTML = i === 0 ? renderIntro() : renderGenotype(G[i - 1]);
+  count.textContent = (i + 1) + ' of ' + total;
+  prev.disabled = i === 0;
+  next.disabled = i === total - 1;
+  window.scrollTo({ top: 0 });
+}
+function go(d) { i = Math.min(total - 1, Math.max(0, i + d)); draw(); }
+prev.addEventListener('click', function () { go(-1); });
+next.addEventListener('click', function () { go(1); });
+document.addEventListener('keydown', function (e) {
+  if (e.key === 'ArrowRight' || e.key === 'PageDown') { go(1); }
+  if (e.key === 'ArrowLeft' || e.key === 'PageUp') { go(-1); }
+});
+draw();
+</script>
