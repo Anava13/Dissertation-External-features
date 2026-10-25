@@ -27,6 +27,14 @@ These are the full data files for the dissertation's supplemental sections.
 
 ---
 
+This is the source code for the Supplemental 1 simulations.
+
+**Supplemental 1: Colony Size Modeling**
+
+- [Colony Modeling](Colony-Modeling.zip): MATLAB branching-process model of colony growth. In the interactive app, `ColonyModelApp`, the user builds a p(success) trajectory from flat segments, ramps, and branch events, sets ε for each segment, and simulates the colony set. The app shows the predicted colony size histogram, KDE, mixture fit, and lineage composition beside a flat control. A Presets panel loads the condition behind every Supplemental 1 figure and table, labeled by figure. `run_all_figures.m` runs every grid preset without the app. Unzip, open the folder in MATLAB, and run `ColonyModelApp`. Requires MATLAB R2021b or later with the Statistics and Machine Learning Toolbox. Setup and run instructions are in the included README.
+
+---
+
 These are the source code and data that produce the Supplemental 4 outputs.
 
 **QuantaColony Source Code**
