@@ -31,7 +31,7 @@ This is the source code for the Supplemental 1 simulations.
 
 **Supplemental 1: Colony Size Modeling**
 
-- [Colony Modeling](Colony-Modeling.zip): MATLAB branching-process model of colony growth. In the interactive app, `ColonyModelApp`, the user builds a p(success) trajectory from flat segments, ramps, and branch events, sets ε for each segment, and simulates the colony set. The app shows the predicted colony size histogram, KDE, mixture fit, and lineage composition beside a flat control. A Presets panel loads the condition behind every Supplemental 1 figure and table, labeled by figure. `run_all_figures.m` runs every grid preset without the app. Unzip, open the folder in MATLAB, and run `ColonyModelApp`. Requires MATLAB R2021b or later with the Statistics and Machine Learning Toolbox. Setup and run instructions are in the included README.
+- [Colony Model](colony-model.html): branching-process model of colony growth that runs in the browser. The user builds a p(success) trajectory from flat segments, ramps, and branch events, sets ε for each segment, and simulates the colony set. Segments and branch points can be dragged on the trajectory plot. The app shows the predicted colony size histogram, KDE, mixture fit, and lineage composition beside a flat control. A Presets panel loads the condition behind every Supplemental 1 figure and table, labeled by figure. A grid preset runs the full parameter sweep and lays out every colony set on an overview map, where selecting a set fits its mixture and shows its plots. Results download as CSV and JSON.
 
 ---
 
