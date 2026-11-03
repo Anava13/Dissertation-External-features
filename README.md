@@ -39,7 +39,7 @@ These are the source code and data that produce the Supplemental 4 outputs.
 
 **QuantaColony Source Code**
 
-- [QuantaColony](QuantaColony.zip): open-source MATLAB application used for colony detection, measurement, and data organization
+- [QuantaColony](QuantaColony_python.zip): open-source MATLAB application used for colony detection, measurement, and data organization
 
 **Analytical Pipeline**
 
