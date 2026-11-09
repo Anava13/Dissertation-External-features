@@ -39,9 +39,9 @@ These are the source code and data that produce the Supplemental 4 outputs.
 
 **QuantaColony Source Code**
 
-- [QuantaColony](QuantaColony_python.zip): open-source MATLAB application used for colony detection, measurement, and data organization
+- [QuantaColony](QuantaColony_python.zip): open-source Python application used for colony detection, measurement, and data organization
 
 **Analytical Pipeline**
 
 - [Analytical Pipeline](Analytical-Pipeline.zip): MATLAB code that builds the composite dataset from the QuantaColony project files and generates the Supplemental 4 PDFs. Unzip and run `run_all.m`. On the first run, the pipeline downloads Complete Analyses from the release below, checks each file against its SHA-256 checksum, and installs it. Requires MATLAB R2021b or later with the Statistics and Machine Learning Toolbox. Setup and run instructions are in the included README.
-- [Complete Analyses](https://github.com/Anava13/Dissertation-External-features/releases/tag/complete-analyses): QuantaColony project files for the Crowding (P2), Rescue (P3), Anbalagan, and Historical datasets, one zip per dataset (2.2 GB total)
+- [Complete Analyses](https://github.com/Anava13/Dissertation-External-features/releases/tag/complete-analyses): QuantaColony project files for the Crowding (P2), Rescue (P3), Anbalagan, and Historical datasets, one zip per dataset (2.2 GB total), as well as QuantaColony projects "qcproj". 
