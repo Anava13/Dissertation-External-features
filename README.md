@@ -39,7 +39,7 @@ These are the source code and data that produce the Supplemental 4 outputs.
 
 **QuantaColony Source Code**
 
-- [QuantaColony](QuantaColony_python.zip): open-source Python application used for colony detection, measurement, and data organization
+- [QuantaColony](quantaColony_python.zip): open-source Python application used for colony detection, measurement, and data organization
 
 **Analytical Pipeline**
 
