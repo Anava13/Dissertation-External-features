@@ -4,30 +4,24 @@
   }
 </style>
 
-These are external animations for Alejandro Navarro's PhD Dissertation.
+These are external resources for Alejandro Navarro's PhD Dissertation.
+
+---
+
+**Interactive Process Models**
+
+Each model runs in any modern browser with no installation.
 
 - [Telomere end-processing workflow](telomere_workflow.html)
 - [Replication Initiation Workflow](replication-initiation.html)
 
 ---
 
-These are the full data files for the dissertation's supplemental sections.
-
 **Supplemental 3: Yeast Two-Hybrid**
 
-- [Yeast Two-Hybrid Full Data](pdfs/Y2H_Raw_Data.pdf)
-
-**Supplemental 4: QuantaColony Analytical Outputs**
-
-- [Anbalagan Dataset](pdfs/Anbalagan_Overview_Selected.pdf)
-- [Historical Dataset](pdfs/Historical_Overview_Selected.pdf)
-- [Crowding Dataset](pdfs/Crowding_Overview_Selected.pdf)
-- [Rescue Full](pdfs/Rescue_Overview_Full.pdf)
-- [Rescue Selected](pdfs/Rescue_Overview_Selected.pdf)
+- [Yeast Two-Hybrid Full Data](pdfs/Y2H_Raw_Data.pdf): the complete yeast two-hybrid dataset as a single PDF.
 
 ---
-
-This is the source code for the Supplemental 1 simulations.
 
 **Supplemental 1: Colony Size Modeling**
 
@@ -35,13 +29,15 @@ This is the source code for the Supplemental 1 simulations.
 
 ---
 
-These are the source code and data that produce the Supplemental 4 outputs.
+**QuantaColony**
 
-**QuantaColony Source Code**
+- [QuantaColony (Python)](https://github.com/Anava13/Dissertation-External-features/releases/tag/QuantaColony-Python): open-source application that crops plate photographs, detects and measures colonies, records every correction made in review, and runs the statistical analyses behind every colony figure in the dissertation. Requires Python 3.10 or later. On Windows, the included installer sets up the program and its shortcuts; on other systems it installs as a standard Python package. Setup and run instructions are in the included README.
 
-- [QuantaColony](quantaColony_python.zip): open-source Python application used for colony detection, measurement, and data organization
+The four colony datasets of the dissertation ship inside QuantaColony as project files, and the program places them in a folder on its home page at first start. Each project holds the original plate photographs, the cropped plate sections, every detected and hand-added colony, and the edit log of the review.
 
-**Analytical Pipeline**
+- **Crowding Dataset**: the plating-density experiment, which relates colony size to the number of colonies sharing a plate.
+- **Rescue Dataset**: the experiment testing whether *dbf4-1* rescues *cdc13-2* senescence, covering four genotypes across five passages with plating density and biological replicates as additional variables.
+- **Anbalagan Dataset**: every colony in Figures 2C and 8D of Anbalagan et al. (2011), one plate per streak, with four genotypes per source plate.
+- **Historical Dataset**: the published senescence plates for *est4-1* (Lendvay et al., 1996) and *est1-1* (Lundblad and Szostak, 1989), each lineage streaked through its passages on a single plate.
 
-- [Analytical Pipeline](Analytical-Pipeline.zip): MATLAB code that builds the composite dataset from the QuantaColony project files and generates the Supplemental 4 PDFs. Unzip and run `run_all.m`. On the first run, the pipeline downloads Complete Analyses from the release below, checks each file against its SHA-256 checksum, and installs it. Requires MATLAB R2021b or later with the Statistics and Machine Learning Toolbox. Setup and run instructions are in the included README.
-- [Complete Analyses](https://github.com/Anava13/Dissertation-External-features/releases/tag/complete-analyses): QuantaColony project files for the Crowding (P2), Rescue (P3), Anbalagan, and Historical datasets, one zip per dataset (2.2 GB total), as well as QuantaColony projects "qcproj". 
+Every colony figure and every quoted colony value in the dissertation can be regenerated from these projects inside QuantaColony. Guided tours lead through each figure: one introduces the program on the Crowding Dataset, and four reproduce the figures of the crowding, rescue, published-plate, and historical analyses. Each step names every setting the figure uses, applies it on request, and explains why each setting matters for the experiment. A single export command writes every data figure as a vector PDF at its printed size, with one table per part of the dissertation listing each quoted value next to the value the current analysis computes.
