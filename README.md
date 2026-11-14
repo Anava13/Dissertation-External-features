@@ -17,6 +17,12 @@ Each model runs in any modern browser with no installation.
 
 ---
 
+**Defense Slideshow**
+
+- [Defense Slideshow](https://github.com/Anava13/Dissertation-External-features/releases/tag/Slides): the slideshow of the dissertation defense, which follows the main line of the dissertation: CST at replication origins, the yeast two-hybrid results, QuantaColony and the plating guidelines, and the *dbf4-1* rescue of *cdc13-2* senescence. A single HTML document that runs in any modern browser with no installation. The process models and colony data figures are drawn live, and each slide builds step by step. Every slide carries speaker notes giving the values and sources behind it, and backup slides take up the questions a reader is likely to ask.
+
+---
+
 **Supplemental 3: Yeast Two-Hybrid**
 
 - [Yeast Two-Hybrid Full Data](pdfs/Y2H_Raw_Data.pdf): the complete yeast two-hybrid dataset as a single PDF.
